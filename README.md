@@ -81,6 +81,21 @@ scripts/        build helpers
 
 Anything that improves the gateway belongs in espOS, not here.
 
+## History
+
+This replaces [sensesp-ble-gateway](https://github.com/dirkwa/sensesp-ble-gateway)
+(archived), which did the same job as a SensESP/Arduino library. The protocol
+is unchanged, so a server configured for that gateway works with this one.
+
+The rewrite exists mainly to get off Arduino, and it fixed several things on
+the way: GATT writes now honour `with_response` (JK-BMS and Daly-BMS reject
+write-with-response on their command characteristic), GATT operations act on
+the connection they were given rather than the first one matching a UUID, and
+advertisement drops are counted honestly.
+
+Not carried over: the NimBLE / ESP32-C5 backend, which was scan-only. The
+archived repository remains the only place that exists.
+
 ## License
 
 Source available, not open source — see [LICENSE.md](LICENSE.md).
