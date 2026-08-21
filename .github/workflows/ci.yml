@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Radio-free logic: hex codecs, the advertisement ring and its drop
+  # accounting, UUID endianness, with_response defaulting. Runs first because
+  # it is fast and catches the errors a firmware build cannot.
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: read pinned IDF version
+        id: idf
+        run: echo "version=$(cat .idf-version)" >> "$GITHUB_OUTPUT"
+
+      # IDF's linux target needs libbsd (espos/docs/development.md).
+      - run: sudo apt-get update && sudo apt-get install -y libbsd-dev
+
+      - uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ steps.idf.outputs.version }}
+          target: linux
+          path: espos/test/host/espos_ble_test
+          command: idf.py --preview set-target linux && idf.py build && ./build/espos_ble_test.elf
+
+  # The config generator rejects descriptors that would not fit NVS (key names
+  # are capped at 15 characters), so a bad ble.json fails here rather than at
+  # someone's flash step.
+  config-descriptor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - run: |
+          python3 espos/tools/espos_gen_config.py \
+            --schema-out /tmp/schema.json --c-out /tmp/gen.c --h-out /tmp/keys.h \
+            espos/components/espos_ble/config/ble.json
+
+  firmware:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # esp32p4 is the reference board (BLE via the C6 co-processor); the
+        # others exercise the native-Bluedroid path.
+        target: [esp32p4, esp32, esp32s3, esp32c3, esp32c6]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: read pinned IDF version
+        id: idf
+        run: echo "version=$(cat .idf-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && npm run build
+        working-directory: espos/ui
+
+      # CMake generates a throwaway signing key when none is present, which is
+      # right for CI: these images are never released. A real release must
+      # restore the project key from a secret (espos/docs/ota.md) - a build
+      # signed with a per-run key installs over USB and then rejects every OTA.
+      - uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ steps.idf.outputs.version }}
+          target: ${{ matrix.target }}
+          command: idf.py build
+
+      - name: check the UI made it into the image
+        run: test -s build/storage.bin

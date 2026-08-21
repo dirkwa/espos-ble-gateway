@@ -1,0 +1,16 @@
+# espos-ble-gateway, 16 MB flash (the Waveshare P4 boards ship 16-32 MB).
+#
+# Sized from the espOS set. 2.5 MB OTA slots: the ESP32-P4 image is ~1.7 MB
+# (its Bluetooth controller lives on the C6), but targets with a native radio
+# link the controller in and land just over 2 MB - a 2 MB slot fails the build
+# by ~4 KB. storage holds the gzipped espOS web UI. Offsets explicit so they
+# cannot drift.
+# Name,     Type, SubType,  Offset,   Size,     Flags
+nvs,        data, nvs,      0x9000,   0x6000,
+otadata,    data, ota,      0xf000,   0x2000,
+phy_init,   data, phy,      0x11000,  0x1000,
+nvs_keys,   data, nvs_keys, 0x12000,  0x1000,   encrypted
+coredump,   data, coredump, 0x13000,  0x40000,
+ota_0,      app,  ota_0,    0x60000,  0x280000,
+ota_1,      app,  ota_1,    0x2E0000, 0x280000,
+storage,    data, littlefs, 0x560000, 0x90000,

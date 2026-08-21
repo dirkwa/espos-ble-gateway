@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: LicenseRef-Source-Available-No-Redistribution
+#
+# Mirrors espos/sdkconfig.defaults. espOS owns the rationale; this file
+# mirrors espOS's defaults rather than including them, so a setting has to
+# appear in both or it never reaches the device.
+
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# espOS component sizing.
+CONFIG_ESPOS_HTTPD_MAX_URI_HANDLERS=64
+CONFIG_ESPOS_SK_RX_FRAME_MAX=65536
+
+CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# Signed OTA without secure boot: the bootloader does not enforce signatures,
+# but the OTA path refuses an image signed with a different key.
+CONFIG_SECURE_SIGNED_APPS_NO_SECURE_BOOT=y
+CONFIG_SECURE_SIGNED_APPS_RSA_SCHEME=y
+CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT=y
+CONFIG_SECURE_BOOT_BUILD_SIGNED_BINARIES=y
+CONFIG_SECURE_BOOT_SIGNING_KEY="secure_boot_signing_key.pem"
+CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y
+
+# --- BLE (this project's reason for existing) --------------------------
+# Bluedroid, not NimBLE: the GATT client is Bluedroid-based. Targets with a
+# native radio use their own controller; the P4 overrides this to route HCI
+# at the C6 co-processor (see sdkconfig.defaults.esp32p4).
+CONFIG_BT_ENABLED=y
+CONFIG_BT_BLUEDROID_ENABLED=y
+CONFIG_BT_GATTC_ENABLE=y
+
+# BLE 4.2, not 5.0. On the P4 the C6 slave's HCI bridge does not correctly
+# forward BLE 5.0 extended HCI commands over SDIO, and legacy scan is the
+# known-working path (the same choice ESPHome's bluetooth_proxy makes).
+# Kept uniform across targets so behaviour does not diverge per board.
+CONFIG_BT_BLE_42_FEATURES_SUPPORTED=y
+CONFIG_BT_BLE_50_FEATURES_SUPPORTED=n
+CONFIG_BT_BTU_TASK_STACK_SIZE=8192
