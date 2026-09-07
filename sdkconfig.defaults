@@ -1,28 +1,23 @@
 # SPDX-License-Identifier: LicenseRef-Source-Available-No-Redistribution
 #
-# Mirrors espos/sdkconfig.defaults. espOS owns the rationale; this file
-# mirrors espOS's defaults rather than including them, so a setting has to
-# appear in both or it never reaches the device.
+# Only what differs from espOS. espos/cmake/espos_project.cmake puts
+# espos/sdkconfig.d/espos.defaults (+ .<target>) on SDKCONFIG_DEFAULTS ahead
+# of this file, so flash/OTA/signing, logging, the HTTP server and the task
+# stacks are inherited and a line here is an override, never a mirror.
+# Defaults reach a FRESH sdkconfig only: delete build*/sdkconfig after
+# changing anything here or in espOS's fragments.
 
-CONFIG_PARTITION_TABLE_CUSTOM=y
-CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+# Own partition table (partitions.csv, selected by the prologue's PARTITIONS
+# argument). espOS's bundled tables set the flash size themselves; a project
+# table has to state it, or espos.defaults' 4 MB fallback applies and the
+# 16 MB layout no longer fits at build time.
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 
-# espOS component sizing.
-CONFIG_ESPOS_HTTPD_MAX_URI_HANDLERS=64
+# Largest inbound SignalK stream frame. espOS's default is 16 KiB; the
+# gateway has had 64 KiB since its first release and a build-glue change is
+# not the place to lower it. The buffer grows on demand, so the gateway's
+# idle stream (it subscribes to nothing) pays nothing for the headroom.
 CONFIG_ESPOS_SK_RX_FRAME_MAX=65536
-
-CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y
-CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
-
-# Signed OTA without secure boot: the bootloader does not enforce signatures,
-# but the OTA path refuses an image signed with a different key.
-CONFIG_SECURE_SIGNED_APPS_NO_SECURE_BOOT=y
-CONFIG_SECURE_SIGNED_APPS_RSA_SCHEME=y
-CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT=y
-CONFIG_SECURE_BOOT_BUILD_SIGNED_BINARIES=y
-CONFIG_SECURE_BOOT_SIGNING_KEY="secure_boot_signing_key.pem"
-CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y
 
 # --- BLE (this project's reason for existing) --------------------------
 # Bluedroid, not NimBLE: the GATT client is Bluedroid-based. Targets with a

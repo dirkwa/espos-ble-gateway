@@ -37,7 +37,9 @@ jobs:
 
   # The config generator rejects descriptors that would not fit NVS (key names
   # are capped at 15 characters), so a bad ble.json fails here rather than at
-  # someone's flash step.
+  # someone's flash step. The generator lives inside espos_config so the
+  # component is self-contained; espos/tools/espos_gen_config.py is a
+  # deprecated shim.
   config-descriptor:
     runs-on: ubuntu-latest
     steps:
@@ -46,7 +48,7 @@ jobs:
           submodules: recursive
           persist-credentials: false
       - run: |
-          python3 espos/tools/espos_gen_config.py \
+          python3 espos/components/espos_config/tools/espos_gen_config.py \
             --schema-out /tmp/schema.json --c-out /tmp/gen.c --h-out /tmp/keys.h \
             espos/components/espos_ble/config/ble.json
 
@@ -68,12 +70,6 @@ jobs:
         id: idf
         run: echo "version=$(cat .idf-version)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm ci && npm run build
-        working-directory: espos/ui
-
       # CMake generates a throwaway signing key when none is present, which is
       # right for CI: these images are never released. A real release must
       # restore the project key from a secret (espos/docs/ota.md) - a build
@@ -84,5 +80,7 @@ jobs:
           target: ${{ matrix.target }}
           command: idf.py build
 
+      # The web UI is a committed bundle in espOS (no Node here); this checks
+      # it was packed into the LittleFS image rather than left out silently.
       - name: check the UI made it into the image
         run: test -s build/storage.bin
