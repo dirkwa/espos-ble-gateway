@@ -12,6 +12,10 @@ sender, a thermometer — and how its bytes become SignalK paths is decided on
 the server by `bt-sensors-plugin-sk`. That keeps the firmware small and means
 adding support for a new sensor never involves reflashing anything.
 
+The application itself is one call: `app_main()` runs `espos_start()`, and
+espOS brings up logging, config, the web UI, WiFi, SignalK, OTA and — because
+`espos_ble` is in the build and Bluetooth is enabled — the gateway, in order.
+
 ## Hardware
 
 | Board | Radio | Status |
@@ -30,21 +34,30 @@ radio sees nothing at all.
 ## Build
 
 Needs ESP-IDF exactly `v6.0.2` (pinned in `.idf-version`; the build refuses a
-different one).
+different one) and nothing else: the espOS web UI is a committed bundle, so
+there is no Node step.
 
 ```sh
 git clone --recursive https://github.com/dirkwa/espos-ble-gateway
 cd espos-ble-gateway
 . ~/esp-idf-v6.0.2/export.sh
 
-scripts/build-ui.sh              # espOS web UI -> LittleFS image (optional but wanted)
-idf.py set-target esp32p4        # or esp32 / esp32s3 / esp32c3 / esp32c6
-scripts/build.sh                 # nice/ionice-wrapped; plain `idf.py build` also works
-idf.py -p /dev/ttyACM0 flash monitor
+# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 the same way
+espos/scripts/build.sh -B build-esp32p4 -DSDKCONFIG=build-esp32p4/sdkconfig -DIDF_TARGET=esp32p4 build
+idf.py -B build-esp32p4 -p /dev/ttyACM0 flash monitor
 ```
 
-Skipping `build-ui.sh` is survivable: the device then serves espOS's
-placeholder page instead of the config UI.
+`espos/scripts/build.sh` is espOS's build wrapper — one build at a time per
+machine, half the cores, `nice`/`ionice`, scratch kept off tmpfs; on a small
+host that is the difference between a build and a frozen session.
+`scripts/build.sh` forwards to it. Plain `idf.py set-target esp32p4 &&
+idf.py build` is the same build without the babysitting.
+
+The sdkconfig is assembled by espOS (`espos/docs/development.md`): its own
+defaults first, then this project's `sdkconfig.defaults` (Bluetooth and the
+little the gateway does differently), then a git-ignored `sdkconfig.local`
+for personal overrides, then the partition table. Defaults reach a fresh
+sdkconfig only — delete `build*/sdkconfig` after changing them.
 
 ## Setup
 
@@ -55,9 +68,10 @@ Credentials live in NVS, never in the firmware image. To provision without
 the portal, see [espos/docs/wifi.md](espos/docs/wifi.md) — put them in a CSV
 **outside the repo**, generate an NVS partition and flash it to `0x9000`.
 
-The gateway finds a SignalK server over mDNS and requests access; approve it
-in the server's admin UI under Security → Access Requests. On a network with
-several servers, pin one with `sk.server_host` and `sk.server_pin`.
+The gateway finds a SignalK server over mDNS and requests access as
+`ble_gateway <hostname>`; approve it in the server's admin UI under
+Security → Access Requests. On a network with several servers, pin one with
+`sk.server_host` and `sk.server_pin`.
 
 Settings live under the `ble` namespace in the web UI. Defaults are sensible;
 `active_scan` is off deliberately (see [espos/docs/ble.md](espos/docs/ble.md)).
@@ -66,17 +80,19 @@ Settings live under the `ble` namespace in the web UI. Defaults are sensible;
 
 `GET /api/v1/ble/status` reports scan, buffer and POST counters — enough to
 tell a BLE problem from a server problem at a glance. Full description in
-[espos/docs/api.md](espos/docs/api.md), and the component guide with the
-troubleshooting notes is [espos/docs/ble.md](espos/docs/ble.md).
+[espos/docs/rest-api.md](espos/docs/rest-api.md), and the component guide
+with the troubleshooting notes is [espos/docs/ble.md](espos/docs/ble.md).
 
 ## Layout
 
 ```
-espos/          espOS submodule: WiFi, config, web UI, SignalK, OTA,
-                and components/espos_ble - where the gateway actually lives
-main/           boot order and board wiring; deliberately thin
-partitions.csv  16 MB: 2 MB OTA slots, LittleFS storage for the UI
-scripts/        build helpers
+espos/               espOS submodule: WiFi, config, web UI, SignalK, OTA, health,
+                     and components/espos_ble - where the gateway actually lives
+main/                app_main() = espos_start(); CMakeLists.txt names the
+                     components that make this build a gateway (deliberately thin)
+sdkconfig.defaults*  only what differs from espOS: Bluetooth, PSRAM on the P4
+partitions.csv       16 MB: 2.5 MB OTA slots, LittleFS storage for the UI
+scripts/build.sh     forwards to espos/scripts/build.sh
 ```
 
 Anything that improves the gateway belongs in espOS, not here.
