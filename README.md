@@ -114,4 +114,15 @@ archived repository remains the only place that exists.
 
 ## License
 
-Source available, not open source — see [LICENSE.md](LICENSE.md).
+Apache-2.0 — see [LICENSE](LICENSE). Relicensed from the previous
+source-available terms in 2026 so that this firmware could be folded into
+espOS, which is Apache-2.0.
+
+## This firmware now also lives in espOS
+
+The same gateway is an espOS example, at
+[`components/espos_ble/examples/ble_gateway`](https://github.com/signalk-espOS/espOS/tree/main/components/espos_ble/examples/ble_gateway).
+It is built by espOS's own CI on every change, which this repository is not,
+so the example is the copy that cannot drift out of step with the component it
+configures. Prefer it unless you want this repository's release history or its
+own partition table.

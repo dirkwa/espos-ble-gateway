@@ -1,4 +1,5 @@
-# SPDX-License-Identifier: LicenseRef-Source-Available-No-Redistribution
+# SPDX-FileCopyrightText: 2026 Dirk Wahrheit
+# SPDX-License-Identifier: Apache-2.0
 #
 # espos-ble-gateway: a pure ESP-IDF 6 project. WiFi, config, the web UI,
 # SignalK discovery/token/stream, OTA and the BLE gateway itself all come from
