@@ -7,7 +7,7 @@
 # components are in the build (main/CMakeLists.txt), which partition table,
 # and the few sdkconfig lines that differ from espOS's.
 #
-# Build:  . <IDF v6.0.2>/export.sh
+# Build:  . <IDF v6.0.3>/export.sh
 #         espos/scripts/build.sh -B build-esp32p4 -DSDKCONFIG=build-esp32p4/sdkconfig -DIDF_TARGET=esp32p4 build
 cmake_minimum_required(VERSION 3.22)
 
@@ -26,7 +26,7 @@ cmake_minimum_required(VERSION 3.22)
 # update into a USB reflash. partitions.csv explains its sizing.
 include("${CMAKE_CURRENT_LIST_DIR}/espos/cmake/espos_project.cmake")
 espos_project_prologue(NAME "ble-gateway" PARTITIONS "${CMAKE_CURRENT_LIST_DIR}/partitions.csv"
-                       COMPONENTS espos_ble)
+                       COMPONENTS espos_ble espos_eth)
 
 project(ble_gateway)
 

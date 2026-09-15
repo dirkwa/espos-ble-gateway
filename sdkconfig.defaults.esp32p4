@@ -25,3 +25,15 @@ CONFIG_SPIRAM=y
 CONFIG_BT_CONTROLLER_DISABLED=y
 CONFIG_ESP_HOSTED_ENABLE_BT_BLUEDROID=y
 CONFIG_ESP_HOSTED_BLUEDROID_HCI_VHCI=y
+
+# --- On the PoE cable ---------------------------------------------------
+# Wired Ethernet (espos_eth) carries the network and the WiFi station never
+# starts, so the C6 co-processor's radio serves BLE alone. Here rather than in
+# the shared sdkconfig.defaults because this is the only target with an EMAC:
+# espos_eth depends on ETH_USE_ESP32_EMAC, so the same line on a C3, C6 or S3
+# would produce a gateway with no network at all rather than a wired one.
+#
+# The stored WiFi credentials stay in NVS, unused; removing this line brings
+# the station back. Note the co-processor watchdog is started by espos_wifi,
+# so it does not run in this configuration.
+CONFIG_ESPOS_WIFI=n
