@@ -33,14 +33,15 @@ radio sees nothing at all.
 
 ## Build
 
-Needs ESP-IDF exactly `v6.0.2` (pinned in `.idf-version`; the build refuses a
+Needs ESP-IDF exactly `v6.0.3` (pinned in `.idf-version`, kept equal to the
+espOS submodule's pin — the build refuses a
 different one) and nothing else: the espOS web UI is a committed bundle, so
 there is no Node step.
 
 ```sh
 git clone --recursive https://github.com/dirkwa/espos-ble-gateway
 cd espos-ble-gateway
-. ~/esp-idf-v6.0.2/export.sh
+. ~/esp-idf-v6.0.3/export.sh
 
 # esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 the same way
 espos/scripts/build.sh -B build-esp32p4 -DSDKCONFIG=build-esp32p4/sdkconfig -DIDF_TARGET=esp32p4 build

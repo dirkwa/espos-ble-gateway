@@ -35,3 +35,8 @@ CONFIG_BT_GATTC_ENABLE=y
 CONFIG_BT_BLE_42_FEATURES_SUPPORTED=y
 CONFIG_BT_BLE_50_FEATURES_SUPPORTED=n
 CONFIG_BT_BTU_TASK_STACK_SIZE=8192
+
+# Ethernet, and therefore the WiFi station being off, is P4-only and lives in
+# sdkconfig.defaults.esp32p4: espos_eth depends on ETH_USE_ESP32_EMAC, which
+# the C3, C6 and S3 do not have, so turning the station off here would leave
+# those builds with no network at all.
