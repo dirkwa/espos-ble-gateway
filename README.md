@@ -38,6 +38,11 @@ is short of RAM (issue #4).
 
 Both paths below are edits to this repository, not options it ships with.
 
+Neither has been booted here — there is no 4 MB or 8 MB board on this bench —
+so both are starting points rather than supported configurations. What was
+checked is that each builds for `esp32c6` with zero warnings and that the image
+fits the slot, which is not the same as a device that runs.
+
 **8 MB, keeping OTA.** Point the prologue at espOS's own 8 MB table (3 MB
 slots, ample for a 2.13 MB image) and delete the flash-size line, because a
 bundled `<n>mb.csv` makes the prologue set the size itself:
@@ -54,7 +59,20 @@ espos_project_prologue(NAME "ble-gateway"
 **4 MB, without OTA.** One `factory` slot holds the image at 71 % with the UI
 storage intact. The cost is absolute rather than a degradation: `esp_https_ota`
 needs a passive slot and fails without one, so **every update becomes a USB
-reflash**. A project's own table sets no flash size, so state it:
+reflash**.
+
+Three edits, and the first is the one that is easy to miss: the prologue still
+names `partitions.csv` otherwise, so the 16 MB table gets selected and the
+flash fails exactly as in #4.
+
+```cmake
+espos_project_prologue(NAME "ble-gateway"
+                       PARTITIONS "${CMAKE_CURRENT_LIST_DIR}/partitions-4mb.csv"
+                       COMPONENTS espos_ble espos_eth)
+```
+
+Then the table itself. A project's own table sets no flash size, unlike a
+bundled `<n>mb.csv`, so the third edit states it:
 
 ```csv
 # partitions-4mb.csv
@@ -72,8 +90,7 @@ storage,    data, littlefs, 0x360000, 0x90000,
 ```
 
 Verified by building it for `esp32c6`: `0x221000` in a `0x300000` slot, zero
-warnings. **Never booted** — there is no 4 MB board here — so treat it as a
-starting point rather than a supported configuration.
+warnings.
 
 The ESP32-P4 has no radio of its own, so Bluetooth (like WiFi) runs over the
 C6 co-processor. Nothing needs flashing on the C6 — its stock firmware
