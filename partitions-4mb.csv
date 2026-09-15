@@ -1,0 +1,23 @@
+# espos-ble-gateway on a 4 MB board (Xiao ESP32C6 and other bare modules).
+#
+# ONE app slot, so THERE IS NO OTA. esp_https_ota needs a passive partition to
+# stage an image into and fails without one (esp_https_ota.c:545, "another
+# suitable Passive OTA partition could not be found"), so every update on a
+# board flashed with this table is a USB reflash. That is the whole trade: the
+# firmware measures 2.13 MB on an ESP32-C6, and two slots of that size plus the
+# UI storage need 5.94 MB, which a 4 MB chip cannot hold at any sizing.
+#
+# Use partitions.csv (16 MB) or espos/partitions/8mb.csv unless the board
+# really is 4 MB -- both keep OTA. A device keeps the table it was flashed
+# with, so moving off this one later is a USB reflash too.
+#
+# Offsets are explicit so they cannot drift. The factory slot holds the image
+# at 71 %, and the table ends at 0x3F0000 with 64 KB of the chip spare.
+# Name,     Type, SubType,  Offset,   Size,     Flags
+nvs,        data, nvs,      0x9000,   0xc000,
+otadata,    data, ota,      0x15000,  0x2000,
+phy_init,   data, phy,      0x17000,  0x1000,
+nvs_keys,   data, nvs_keys, 0x18000,  0x1000,   encrypted
+coredump,   data, coredump, 0x19000,  0x40000,
+factory,    app,  factory,  0x60000,  0x300000,
+storage,    data, littlefs, 0x360000, 0x90000,

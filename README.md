@@ -18,10 +18,70 @@ espOS brings up logging, config, the web UI, WiFi, SignalK, OTA and — because
 
 ## Hardware
 
-| Board | Radio | Status |
-|---|---|---|
-| Waveshare ESP32-P4 (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | verified |
-| ESP32 / C3 / S3 / C6 | native Bluedroid | builds; not yet run |
+| Board | Radio | Flash | Status |
+|---|---|---|---|
+| Waveshare ESP32-P4 (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | 16 MB | verified |
+| ESP32 / C3 / S3 / C6 | native Bluedroid | 16 MB as shipped | builds; not yet run |
+
+**As cloned, this builds a 16 MB image on every target**: `partitions.csv` is a
+16 MB table and `sdkconfig.defaults` sets `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`.
+Bluedroid is large — the image measures 2.13 MB on an ESP32-C6 — so two 2.5 MB
+OTA slots plus the web-UI storage partition come to 5.94 MB, which is why the
+table is sized the way it is. `esptool.py flash_id` reports the flash size of a
+board you are unsure about.
+
+A **4 MB** board cannot hold that table at all: it runs past the end of the
+chip, and the flash fails partway through writing rather than because the board
+is short of RAM (issue #4).
+
+### Other flash sizes
+
+Both paths below are edits to this repository, not options it ships with.
+
+Neither has been booted here — there is no 4 MB or 8 MB board on this bench —
+so both are starting points rather than supported configurations. What was
+checked is that each builds for `esp32c6` with zero warnings and that the image
+fits the slot, which is not the same as a device that runs.
+
+**8 MB, keeping OTA.** Point the prologue at espOS's own 8 MB table (3 MB
+slots, ample for a 2.13 MB image) and delete the flash-size line, because a
+bundled `<n>mb.csv` makes the prologue set the size itself:
+
+```cmake
+espos_project_prologue(NAME "ble-gateway"
+                       PARTITIONS "${CMAKE_CURRENT_LIST_DIR}/espos/partitions/8mb.csv"
+                       COMPONENTS espos_ble espos_eth)
+```
+```diff
+-CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+```
+
+**4 MB, without OTA.** One `factory` slot holds the image at 71 % with the UI
+storage intact. The cost is absolute rather than a degradation: `esp_https_ota`
+needs a passive slot and fails without one, so **every update becomes a USB
+reflash**.
+
+The table ships as [`partitions-4mb.csv`](partitions-4mb.csv), so this is two
+edits. The first is the one that is easy to miss: the prologue still names
+`partitions.csv` otherwise, so the 16 MB table gets selected and the flash
+fails exactly as in #4.
+
+```cmake
+espos_project_prologue(NAME "ble-gateway"
+                       PARTITIONS "${CMAKE_CURRENT_LIST_DIR}/partitions-4mb.csv"
+                       COMPONENTS espos_ble espos_eth)
+```
+
+A project's own table sets no flash size, unlike a bundled `<n>mb.csv`, so the
+second edit states it:
+
+```diff
+-CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
++CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+```
+
+Verified by building it for `esp32c6`: `0x221000` in a `0x300000` slot, zero
+warnings.
 
 The ESP32-P4 has no radio of its own, so Bluetooth (like WiFi) runs over the
 C6 co-processor. Nothing needs flashing on the C6 — its stock firmware
@@ -92,7 +152,7 @@ espos/               espOS submodule: WiFi, config, web UI, SignalK, OTA, health
 main/                app_main() = espos_start(); CMakeLists.txt names the
                      components that make this build a gateway (deliberately thin)
 sdkconfig.defaults*  only what differs from espOS: Bluetooth, PSRAM on the P4
-partitions.csv       16 MB: 2.5 MB OTA slots, LittleFS storage for the UI
+partitions.csv       needs 16 MB: 2.5 MB OTA slots, LittleFS storage for the UI
 scripts/build.sh     forwards to espos/scripts/build.sh
 ```
 
