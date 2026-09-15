@@ -61,9 +61,10 @@ storage intact. The cost is absolute rather than a degradation: `esp_https_ota`
 needs a passive slot and fails without one, so **every update becomes a USB
 reflash**.
 
-Three edits, and the first is the one that is easy to miss: the prologue still
-names `partitions.csv` otherwise, so the 16 MB table gets selected and the
-flash fails exactly as in #4.
+The table ships as [`partitions-4mb.csv`](partitions-4mb.csv), so this is two
+edits. The first is the one that is easy to miss: the prologue still names
+`partitions.csv` otherwise, so the 16 MB table gets selected and the flash
+fails exactly as in #4.
 
 ```cmake
 espos_project_prologue(NAME "ble-gateway"
@@ -71,19 +72,9 @@ espos_project_prologue(NAME "ble-gateway"
                        COMPONENTS espos_ble espos_eth)
 ```
 
-Then the table itself. A project's own table sets no flash size, unlike a
-bundled `<n>mb.csv`, so the third edit states it:
+A project's own table sets no flash size, unlike a bundled `<n>mb.csv`, so the
+second edit states it:
 
-```csv
-# partitions-4mb.csv
-nvs,        data, nvs,      0x9000,   0xc000,
-otadata,    data, ota,      0x15000,  0x2000,
-phy_init,   data, phy,      0x17000,  0x1000,
-nvs_keys,   data, nvs_keys, 0x18000,  0x1000,   encrypted
-coredump,   data, coredump, 0x19000,  0x40000,
-factory,    app,  factory,  0x60000,  0x300000,
-storage,    data, littlefs, 0x360000, 0x90000,
-```
 ```diff
 -CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 +CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
