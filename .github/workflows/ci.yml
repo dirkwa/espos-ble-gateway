@@ -61,9 +61,16 @@ jobs:
         # others exercise the native-Bluedroid path.
         target: [esp32p4, esp32, esp32s3, esp32c3, esp32c6]
     steps:
+      # fetch-depth: 0 because the version baked into the image comes from
+      # `git describe`, and checkout's default depth of 1 fetches no tags in
+      # this repository or in the espOS submodule. Without it describe answers
+      # with a bare hash, espos_version.cmake rejects that and falls back to
+      # version.txt, so every build between two releases claims to BE that
+      # release; and the build log cannot say which espOS is in the image.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
           persist-credentials: false
 
       - name: read pinned IDF version
