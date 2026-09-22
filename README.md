@@ -144,6 +144,33 @@ tell a BLE problem from a server problem at a glance. Full description in
 [espos/docs/rest-api.md](espos/docs/rest-api.md), and the component guide
 with the troubleshooting notes is [espos/docs/ble.md](espos/docs/ble.md).
 
+## Releases
+
+`release-please` watches `main`, opens a `chore: release <version>` pull request,
+and merging that tags the release and triggers `release-firmware.yml`, which
+builds every supported chip and attaches both images per target (merged for a
+cable, app-only for an OTA).
+
+Two repository settings have to be right, and neither fails in a way that tells
+you so:
+
+* **Settings → Actions → General → "Allow GitHub Actions to create and approve
+  pull requests"** must be enabled, and workflow permissions set to read/write.
+  Without it release-please cannot open its release PR and the run fails with
+  *"This run likely failed because of a workflow file issue"* and **zero jobs
+  executed** — no job log, and nothing wrong with the workflow file. This cost
+  three wrong diagnoses; `actionlint` passing while the run still fails is the
+  signal that it is a permission, not the YAML.
+* **`GATEWAY_SIGNING_KEY_PEM`** must hold the app-signing key:
+
+  ```sh
+  gh secret set GATEWAY_SIGNING_KEY_PEM --repo <owner>/<repo> < signing_key.pem
+  ```
+
+  A release built without it uses a per-run throwaway key: it installs over USB
+  and then refuses every future OTA, on the boat, months later. The workflow
+  fails closed rather than let that happen.
+
 ## Layout
 
 ```
