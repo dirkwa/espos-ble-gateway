@@ -1,0 +1,78 @@
+# SPDX-FileCopyrightText: 2026 Dirk Wahrheit
+# SPDX-License-Identifier: LicenseRef-Source-Available-No-Redistribution
+#
+# Build and release the BLE gateway for every chip it supports.
+#
+# The per-target build is espOS's reusable build-firmware.yml rather than a
+# local copy: two consumers had already grown their own copies of that job and
+# they had drifted, which is the whole reason the reusable one exists. It needed
+# `tag` and `artifact` inputs to be callable this way (signalk-espOS/espOS#121).
+#
+# One release job for all targets, not one per leg: five parallel releases on
+# one tag would race each other, and only an aggregate can attach every
+# target's assets to the same tag.
+name: Build & release firmware
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "The release tag to build, sign and attach assets to"
+        type: string
+        required: true
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  firmware:
+    strategy:
+      # One board per chip, so a chip failing to build should still yield the
+      # others rather than leaving a release with no assets. The release job
+      # below still requires them all, so a partial build does not ship.
+      fail-fast: false
+      matrix:
+        target: [esp32p4, esp32c5, esp32c6, esp32c3, esp32s3, esp32]
+    uses: signalk-espOS/espOS/.github/workflows/build-firmware.yml@main
+    with:
+      target: ${{ matrix.target }}
+      # The chip is in the name because these images are NOT interchangeable
+      # and a device cannot tell them apart: espOS matches an update on app,
+      # target and channel.
+      name: ble-gateway-${{ matrix.target }}
+      tag: ${{ inputs.tag || github.event.release.tag_name }}
+      # Distinct per leg: two legs uploading one artifact name is an error on
+      # upload-artifact v4+.
+      artifact: firmware-${{ matrix.target }}
+    secrets:
+      signing_key: ${{ secrets.GATEWAY_SIGNING_KEY_PEM }}
+
+  release:
+    needs: firmware
+    runs-on: ubuntu-latest
+    if: inputs.tag != '' || github.event_name == 'release'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          # Every leg's artifact, merged into one dist/ for a single release.
+          pattern: firmware-*
+          merge-multiple: true
+          path: dist
+
+      - name: list what will be attached
+        run: ls -l dist/
+
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+        with:
+          # Named explicitly: on a workflow_call there is no release event.
+          tag_name: ${{ inputs.tag || github.event.release.tag_name }}
+          # Fail rather than publish a release missing a chip's firmware: a
+          # silently incomplete release is worse than a failed one, because the
+          # registry would index it and offer owners of that chip nothing.
+          fail_on_unmatched_files: true
+          files: dist/*.bin

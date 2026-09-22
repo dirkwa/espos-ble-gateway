@@ -103,7 +103,7 @@ git clone --recursive https://github.com/dirkwa/espos-ble-gateway
 cd espos-ble-gateway
 . ~/esp-idf-v6.0.3/export.sh
 
-# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 the same way
+# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 / esp32c5 the same way
 espos/scripts/build.sh -B build-esp32p4 -DSDKCONFIG=build-esp32p4/sdkconfig -DIDF_TARGET=esp32p4 build
 idf.py -B build-esp32p4 -p /dev/ttyACM0 flash monitor
 ```

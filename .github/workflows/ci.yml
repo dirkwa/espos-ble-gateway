@@ -59,7 +59,7 @@ jobs:
       matrix:
         # esp32p4 is the reference board (BLE via the C6 co-processor); the
         # others exercise the native-Bluedroid path.
-        target: [esp32p4, esp32, esp32s3, esp32c3, esp32c6]
+        target: [esp32p4, esp32, esp32s3, esp32c3, esp32c6, esp32c5]
     steps:
       # fetch-depth: 0 because the version baked into the image comes from
       # `git describe`, and checkout's default depth of 1 fetches no tags in
