@@ -29,6 +29,14 @@ on:
           least privilege for the one credential whose loss strands every
           device in the field.
         required: false
+      GATEWAY_SIGNING_KEY_PEM:
+        description: >-
+          The same key under its repository-secret name. Declared so the
+          fallback below resolves (and type-checks) on a `release` or manual
+          run: a called workflow can only see secrets named in THIS block, so
+          referring to an undeclared one yields empty rather than the
+          repository's value.
+        required: false
   release:
     types: [published]
   workflow_dispatch:
@@ -55,13 +63,22 @@ jobs:
       matrix:
         target: [esp32p4, esp32c5, esp32c6, esp32c3, esp32s3, esp32]
     # @main, matching what espOS documents for this workflow (docs/releasing.md
-    # and the workflow's own header). A SHA would be safer against a mutable
-    # branch, and for a THIRD-PARTY action that is the rule here -- every one of
-    # those is SHA-pinned. This is our own repository, the espOS submodule is
-    # pinned to a tag independently, and the whole point of the shared workflow
-    # is that a fix to it reaches every consumer. Pinning a SHA reintroduces the
-    # drift it exists to prevent. Revisit if espOS ever tags the workflow
-    # separately from the firmware.
+    # and the workflow's own header). Every THIRD-PARTY action in this repo is
+    # SHA-pinned, and that asymmetry is deliberate:
+    #
+    #   - signalk-espOS/espOS has one collaborator, the same person who holds
+    #     this repository's signing key. A SHA would only guard against someone
+    #     who can push to espOS main -- and anyone who can do that can already
+    #     use the key directly, so it buys nothing here that is not already
+    #     lost. The forwarded signing_key does not change that.
+    #   - The espOS SUBMODULE is pinned to a tag independently, so what gets
+    #     compiled is fixed; only the build recipe floats.
+    #   - A shared workflow exists so a fix reaches every consumer. Pinning a
+    #     SHA per consumer reintroduces exactly the drift it was written to
+    #     remove -- two consumers had already grown divergent copies once.
+    #
+    # Revisit if espOS gains collaborators who should not be able to sign this
+    # firmware, or if it starts tagging the workflow separately.
     uses: signalk-espOS/espOS/.github/workflows/build-firmware.yml@main
     with:
       target: ${{ matrix.target }}
