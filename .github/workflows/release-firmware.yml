@@ -29,14 +29,6 @@ on:
           least privilege for the one credential whose loss strands every
           device in the field.
         required: false
-      GATEWAY_SIGNING_KEY_PEM:
-        description: >-
-          The same key under its repository-secret name. Declared so the
-          fallback below resolves (and type-checks) on a `release` or manual
-          run: a called workflow can only see secrets named in THIS block, so
-          referring to an undeclared one yields empty rather than the
-          repository's value.
-        required: false
   release:
     types: [published]
   workflow_dispatch:
@@ -91,8 +83,15 @@ jobs:
       # upload-artifact v4+.
       artifact: firmware-${{ matrix.target }}
     secrets:
-      # inputs first for a workflow_call; the repository secret for a `release`
-      # or manual run, where there is no caller to pass one.
+      # `signing_key` when called (release-please passes it); the repository
+      # secret on a `release` or manual run, where this workflow is not a called
+      # workflow and repository secrets resolve under their own names.
+      #
+      # Declaring GATEWAY_SIGNING_KEY_PEM as a second workflow_call secret to
+      # make that fallback "type-check" is what broke this file: a called
+      # workflow that declares a secret its caller never supplies fails
+      # validation before any job starts, and the whole release-please run
+      # reported "a workflow file issue" with zero jobs executed.
       signing_key: ${{ secrets.signing_key || secrets.GATEWAY_SIGNING_KEY_PEM }}
 
   release:
