@@ -23,6 +23,15 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: >-
+          Existing release tag to build and attach assets to. Required: without
+          it the reusable workflow sees an empty tag, skips restoring the
+          signing key, stages nothing, and the release job below is skipped --
+          a manual run that appears to succeed and produces nothing.
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -36,6 +45,14 @@ jobs:
       fail-fast: false
       matrix:
         target: [esp32p4, esp32c5, esp32c6, esp32c3, esp32s3, esp32]
+    # @main, matching what espOS documents for this workflow (docs/releasing.md
+    # and the workflow's own header). A SHA would be safer against a mutable
+    # branch, and for a THIRD-PARTY action that is the rule here -- every one of
+    # those is SHA-pinned. This is our own repository, the espOS submodule is
+    # pinned to a tag independently, and the whole point of the shared workflow
+    # is that a fix to it reaches every consumer. Pinning a SHA reintroduces the
+    # drift it exists to prevent. Revisit if espOS ever tags the workflow
+    # separately from the firmware.
     uses: signalk-espOS/espOS/.github/workflows/build-firmware.yml@main
     with:
       target: ${{ matrix.target }}

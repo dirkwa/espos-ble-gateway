@@ -49,7 +49,7 @@ bundled `<n>mb.csv` makes the prologue set the size itself:
 
 ```cmake
 espos_project_prologue(NAME "ble-gateway"
-                       PARTITIONS "${CMAKE_CURRENT_LIST_DIR}/espos/partitions/8mb.csv"
+                       PARTITIONS "${ESPOS_PARTITIONS_DIR}/8mb.csv"
                        COMPONENTS espos_ble espos_eth)
 ```
 ```diff
