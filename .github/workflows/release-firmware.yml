@@ -74,10 +74,19 @@ jobs:
       # upload-artifact v4+.
       artifact: firmware-${{ matrix.target }}
     secrets:
-      # The repository secret by its own name. Available on all three triggers,
-      # because this file reads it directly rather than receiving it as a
-      # workflow_call secret -- which is why release-please.yml needs to
-      # forward nothing.
+      # The repository secret by its own name, rather than declaring it under
+      # this file's own `workflow_call.secrets`. That keeps the secret's name in
+      # one place, but it has a consequence worth stating, because getting it
+      # wrong yields unsigned firmware and no error anywhere:
+      #
+      # on the `release:` and `workflow_dispatch:` triggers the repository
+      # secret is visible here directly, but on `workflow_call:` this file is a
+      # CALLED workflow, and a called workflow receives no secrets unless its
+      # caller forwards them. release-please.yml reaches this file on exactly
+      # that trigger, so its `secrets: inherit` is what makes the key readable
+      # here. It is load-bearing, not redundant -- without it the build falls
+      # back to a per-run throwaway key, succeeds, and produces a release that
+      # installs over USB and then refuses every OTA.
       signing_key: ${{ secrets.GATEWAY_SIGNING_KEY_PEM }}
 
   release:
