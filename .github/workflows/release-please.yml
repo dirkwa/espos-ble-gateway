@@ -38,11 +38,19 @@ jobs:
     uses: ./.github/workflows/release-firmware.yml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
-    # `inherit`, as the cockpit does. release-firmware.yml declares no
-    # workflow_call secrets -- it reads GATEWAY_SIGNING_KEY_PEM by its own name,
-    # which is the only shape that also works on its `release` and
-    # workflow_dispatch triggers. Naming a secret here instead requires the
-    # called workflow to declare it, and every variation of that failed
-    # validation with zero jobs run. Least privilege lost to a platform
-    # constraint, noted rather than pretended away.
+    # `inherit`, and it IS load-bearing -- not the redundancy an earlier
+    # version of this comment claimed.
+    #
+    # release-firmware.yml reads `secrets.GATEWAY_SIGNING_KEY_PEM` by name,
+    # and a repository secret is NOT automatically visible inside a called
+    # workflow -- the caller has to make it available, and `inherit` is what
+    # does that. Remove it and the key reads empty, the build falls back to a
+    # per-run throwaway, and the release installs over USB and then refuses
+    # every OTA. Silently, because an unsigned build still succeeds.
+    #
+    # Declaring the secret under workflow_call.secrets and naming it here is
+    # what a review asked for twice. That shape fails validation when caller
+    # and callee disagree, and it is not what the cockpit does -- the
+    # cockpit's combination (inherit + read by name) is the only one proven
+    # here, across four releases.
     secrets: inherit
