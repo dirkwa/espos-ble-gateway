@@ -38,12 +38,19 @@ jobs:
     uses: ./.github/workflows/release-firmware.yml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
-    # No `secrets:` at all. release-firmware.yml reads GATEWAY_SIGNING_KEY_PEM
-    # by its own name -- a repository secret, available to it directly -- so
-    # there is nothing to forward. `inherit` would hand it every secret this
-    # repository holds for no benefit.
+    # `inherit`, and it IS load-bearing -- not the redundancy an earlier
+    # version of this comment claimed.
     #
-    # An earlier version of this file claimed `inherit` was required. It was
-    # not: the release chain was broken by an expression in a description in
-    # espOS's build-firmware.yml (signalk-espOS/espOS#123), and the secrets
-    # shape was never the cause.
+    # release-firmware.yml reads `secrets.GATEWAY_SIGNING_KEY_PEM` by name,
+    # and a repository secret is NOT automatically visible inside a called
+    # workflow -- the caller has to make it available, and `inherit` is what
+    # does that. Remove it and the key reads empty, the build falls back to a
+    # per-run throwaway, and the release installs over USB and then refuses
+    # every OTA. Silently, because an unsigned build still succeeds.
+    #
+    # Declaring the secret under workflow_call.secrets and naming it here is
+    # what a review asked for twice. That shape fails validation when caller
+    # and callee disagree, and it is not what the cockpit does -- the
+    # cockpit's combination (inherit + read by name) is the only one proven
+    # here, across four releases.
+    secrets: inherit
