@@ -20,15 +20,6 @@ on:
         description: "The release tag to build, sign and attach assets to"
         type: string
         required: true
-    secrets:
-      signing_key:
-        description: >-
-          PEM of the app-signing key, passed down to espOS's build-firmware.yml.
-          Declared rather than relying on `secrets: inherit` so this workflow
-          receives ONE secret instead of every secret the repository holds --
-          least privilege for the one credential whose loss strands every
-          device in the field.
-        required: false
   release:
     types: [published]
   workflow_dispatch:
@@ -83,16 +74,14 @@ jobs:
       # upload-artifact v4+.
       artifact: firmware-${{ matrix.target }}
     secrets:
-      # `signing_key` when called (release-please passes it); the repository
-      # secret on a `release` or manual run, where this workflow is not a called
-      # workflow and repository secrets resolve under their own names.
-      #
-      # Declaring GATEWAY_SIGNING_KEY_PEM as a second workflow_call secret to
-      # make that fallback "type-check" is what broke this file: a called
-      # workflow that declares a secret its caller never supplies fails
-      # validation before any job starts, and the whole release-please run
-      # reported "a workflow file issue" with zero jobs executed.
-      signing_key: ${{ secrets.signing_key || secrets.GATEWAY_SIGNING_KEY_PEM }}
+      # The repository secret by its own name, exactly as the cockpit's
+      # workflow does. Referencing a `workflow_call`-declared name such as
+      # `secrets.signing_key` here does NOT work: on a `release` or
+      # workflow_dispatch run this file is not a called workflow, that name is
+      # not a repository secret, and the whole workflow fails validation before
+      # any job starts -- "a workflow file issue", zero jobs, no log to read.
+      # Two attempts at being cleverer than this both failed that way.
+      signing_key: ${{ secrets.GATEWAY_SIGNING_KEY_PEM }}
 
   release:
     needs: firmware
