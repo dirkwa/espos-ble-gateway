@@ -38,4 +38,7 @@ jobs:
     uses: ./.github/workflows/release-firmware.yml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
-    secrets: inherit
+    secrets:
+      # Named, not `inherit`: the firmware job needs exactly one secret, and
+      # inheriting hands it every secret this repository holds.
+      signing_key: ${{ secrets.GATEWAY_SIGNING_KEY_PEM }}

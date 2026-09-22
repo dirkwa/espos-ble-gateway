@@ -21,7 +21,7 @@ espOS brings up logging, config, the web UI, WiFi, SignalK, OTA and — because
 | Board | Radio | Flash | Status |
 |---|---|---|---|
 | Waveshare ESP32-P4 (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | 16 MB | verified |
-| ESP32 / C3 / S3 / C6 | native Bluedroid | 16 MB as shipped | builds; not yet run |
+| ESP32 / C3 / S3 / C6 / C5 | native Bluedroid | 16 MB as shipped | builds; not yet run |
 
 **As cloned, this builds a 16 MB image on every target**: `partitions.csv` is a
 16 MB table and `sdkconfig.defaults` sets `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`.
@@ -170,8 +170,13 @@ write-with-response on their command characteristic), GATT operations act on
 the connection they were given rather than the first one matching a UUID, and
 advertisement drops are counted honestly.
 
-Not carried over: the NimBLE / ESP32-C5 backend, which was scan-only. The
-archived repository remains the only place that exists.
+Not carried over: that gateway's **NimBLE** backend, which was scan-only. The
+archived repository remains the only place it exists.
+
+The C5 itself is built here (Bluedroid, like the other native-radio chips) but
+has not been run on hardware -- the table above says so. It is in CI and in the
+release matrix so an image exists to test with; treat it as build-tested, not
+verified.
 
 ## License
 

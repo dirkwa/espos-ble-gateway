@@ -20,6 +20,15 @@ on:
         description: "The release tag to build, sign and attach assets to"
         type: string
         required: true
+    secrets:
+      signing_key:
+        description: >-
+          PEM of the app-signing key, passed down to espOS's build-firmware.yml.
+          Declared rather than relying on `secrets: inherit` so this workflow
+          receives ONE secret instead of every secret the repository holds --
+          least privilege for the one credential whose loss strands every
+          device in the field.
+        required: false
   release:
     types: [published]
   workflow_dispatch:
@@ -65,7 +74,9 @@ jobs:
       # upload-artifact v4+.
       artifact: firmware-${{ matrix.target }}
     secrets:
-      signing_key: ${{ secrets.GATEWAY_SIGNING_KEY_PEM }}
+      # inputs first for a workflow_call; the repository secret for a `release`
+      # or manual run, where there is no caller to pass one.
+      signing_key: ${{ secrets.signing_key || secrets.GATEWAY_SIGNING_KEY_PEM }}
 
   release:
     needs: firmware
