@@ -38,7 +38,11 @@ jobs:
     uses: ./.github/workflows/release-firmware.yml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
-    secrets:
-      # Named, not `inherit`: the firmware job needs exactly one secret, and
-      # inheriting hands it every secret this repository holds.
-      signing_key: ${{ secrets.GATEWAY_SIGNING_KEY_PEM }}
+    # `inherit`, as the cockpit does. release-firmware.yml declares no
+    # workflow_call secrets -- it reads GATEWAY_SIGNING_KEY_PEM by its own name,
+    # which is the only shape that also works on its `release` and
+    # workflow_dispatch triggers. Naming a secret here instead requires the
+    # called workflow to declare it, and every variation of that failed
+    # validation with zero jobs run. Least privilege lost to a platform
+    # constraint, noted rather than pretended away.
+    secrets: inherit
