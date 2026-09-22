@@ -74,13 +74,10 @@ jobs:
       # upload-artifact v4+.
       artifact: firmware-${{ matrix.target }}
     secrets:
-      # The repository secret by its own name, exactly as the cockpit's
-      # workflow does. Referencing a `workflow_call`-declared name such as
-      # `secrets.signing_key` here does NOT work: on a `release` or
-      # workflow_dispatch run this file is not a called workflow, that name is
-      # not a repository secret, and the whole workflow fails validation before
-      # any job starts -- "a workflow file issue", zero jobs, no log to read.
-      # Two attempts at being cleverer than this both failed that way.
+      # The repository secret by its own name. Available on all three triggers,
+      # because this file reads it directly rather than receiving it as a
+      # workflow_call secret -- which is why release-please.yml needs to
+      # forward nothing.
       signing_key: ${{ secrets.GATEWAY_SIGNING_KEY_PEM }}
 
   release:
