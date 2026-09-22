@@ -21,7 +21,7 @@ espOS brings up logging, config, the web UI, WiFi, SignalK, OTA and — because
 | Board | Radio | Flash | Status |
 |---|---|---|---|
 | Waveshare ESP32-P4 (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | 16 MB | verified |
-| ESP32 / C3 / S3 / C6 | native Bluedroid | 16 MB as shipped | builds; not yet run |
+| ESP32 / C3 / S3 / C6 / C5 | native Bluedroid | 16 MB as shipped | builds; not yet run |
 
 **As cloned, this builds a 16 MB image on every target**: `partitions.csv` is a
 16 MB table and `sdkconfig.defaults` sets `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`.
@@ -49,7 +49,7 @@ bundled `<n>mb.csv` makes the prologue set the size itself:
 
 ```cmake
 espos_project_prologue(NAME "ble-gateway"
-                       PARTITIONS "${CMAKE_CURRENT_LIST_DIR}/espos/partitions/8mb.csv"
+                       PARTITIONS "${ESPOS_PARTITIONS_DIR}/8mb.csv"
                        COMPONENTS espos_ble espos_eth)
 ```
 ```diff
@@ -103,7 +103,7 @@ git clone --recursive https://github.com/dirkwa/espos-ble-gateway
 cd espos-ble-gateway
 . ~/esp-idf-v6.0.3/export.sh
 
-# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 the same way
+# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 / esp32c5 the same way
 espos/scripts/build.sh -B build-esp32p4 -DSDKCONFIG=build-esp32p4/sdkconfig -DIDF_TARGET=esp32p4 build
 idf.py -B build-esp32p4 -p /dev/ttyACM0 flash monitor
 ```
@@ -170,8 +170,13 @@ write-with-response on their command characteristic), GATT operations act on
 the connection they were given rather than the first one matching a UUID, and
 advertisement drops are counted honestly.
 
-Not carried over: the NimBLE / ESP32-C5 backend, which was scan-only. The
-archived repository remains the only place that exists.
+Not carried over: that gateway's **NimBLE** backend, which was scan-only. The
+archived repository remains the only place it exists.
+
+The C5 itself is built here (Bluedroid, like the other native-radio chips) but
+has not been run on hardware -- the table above says so. It is in CI and in the
+release matrix so an image exists to test with; treat it as build-tested, not
+verified.
 
 ## License
 
