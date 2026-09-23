@@ -99,8 +99,16 @@ jobs:
     # step is a fetch-modify-force-push of one shared branch, so two runs for
     # DIFFERENT tags are exactly the pair that can lose data: both read the
     # branch, each adds its own directory, and the second push discards the
-    # first one's. Keying by tag would permit precisely that. Releases are rare
-    # and the step takes seconds, so queueing them costs nothing.
+    # first one's. Keying by tag would permit precisely that.
+    #
+    # Know the limit of this, because it is not a queue: GitHub keeps at most
+    # ONE pending run per concurrency group, so with three runs in flight the
+    # middle one is cancelled rather than waiting its turn, and that release
+    # gets no assets and no mirror. `cancel-in-progress: false` only protects
+    # the run already executing. Two concurrent releases are safe, which is the
+    # realistic case here -- releases are rare and the job takes minutes -- but
+    # a burst of three needs the skipped tag re-run by hand
+    # (workflow_dispatch), and the tag-exists check below makes that safe to do.
     concurrency:
       group: release-assets-${{ github.repository }}
       cancel-in-progress: false
