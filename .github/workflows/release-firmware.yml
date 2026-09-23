@@ -264,6 +264,10 @@ jobs:
               ;;
             2)
               echo "release-assets does not exist yet; creating it"
+              # Record that there was nothing here before, so a rollback deletes
+              # the branch this run creates rather than warning about a snapshot
+              # that could never have existed.
+              touch "${RUNNER_TEMP}/release-assets-was-absent"
               ;;
             *)
               echo "::error::could not reach ${REPO} to read release-assets" \
@@ -337,7 +341,18 @@ jobs:
           TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          remote="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
           snapshot="${RUNNER_TEMP}/release-assets-before"
+
+          # The branch did not exist before this run, so "restoring" it means
+          # removing what this run created.
+          if [ -f "${RUNNER_TEMP}/release-assets-was-absent" ]; then
+            echo "release-assets did not exist before this run; deleting it"
+            git push -q --delete "$remote" release-assets \
+              || echo "::warning::could not delete release-assets"
+            exit 0
+          fi
+
           if [ ! -d "$snapshot/.git" ]; then
             echo "::warning::no pre-mirror snapshot to restore; the" \
                  "release-assets branch may advertise $TAG with no assets" \
@@ -345,7 +360,5 @@ jobs:
             exit 0
           fi
           cd "$snapshot"
-          git push -q --force \
-            "https://x-access-token:${TOKEN}@github.com/${REPO}.git" \
-            release-assets
+          git push -q --force "$remote" release-assets
           echo "release-assets restored to its state before this run"
