@@ -95,6 +95,15 @@ jobs:
     if: inputs.tag != '' || github.event_name == 'release'
     permissions:
       contents: write
+    # Serialised across ALL tags, deliberately not keyed by tag. The mirror
+    # step is a fetch-modify-force-push of one shared branch, so two runs for
+    # DIFFERENT tags are exactly the pair that can lose data: both read the
+    # branch, each adds its own directory, and the second push discards the
+    # first one's. Keying by tag would permit precisely that. Releases are rare
+    # and the step takes seconds, so queueing them costs nothing.
+    concurrency:
+      group: release-assets-${{ github.repository }}
+      cancel-in-progress: false
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -106,15 +115,44 @@ jobs:
       - name: list what will be attached
         run: ls -l dist/
 
-      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
-        with:
-          # Named explicitly: on a workflow_call there is no release event.
-          tag_name: ${{ inputs.tag || github.event.release.tag_name }}
-          # Fail rather than publish a release missing a chip's firmware: a
-          # silently incomplete release is worse than a failed one, because the
-          # registry would index it and offer owners of that chip nothing.
-          fail_on_unmatched_files: true
-          files: dist/*.bin
+      # Before publishing anything. raw.githubusercontent cannot serve a file
+      # this large, so the browser-readable mirror would 404 -- and once the
+      # release exists the registry indexes it and offers owners of that chip a
+      # download that fails. Failing here leaves no half-published release.
+      # The mirror lays the branch out as <tag>/<asset> and prunes by top-level
+      # directory name, so a tag containing a slash would nest, escape both the
+      # TAG comparison and the pruning, and publish URLs under a path nothing
+      # retains. release-please cannot emit one (include-component-in-tag is
+      # false) but the workflow_dispatch input is free text, so reject it here
+      # rather than making the layout cope with a tag shape this project does
+      # not use.
+      - name: refuse a tag the mirror cannot lay out
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          case "$TAG" in
+            "" )
+              echo "::error::no tag to publish"; exit 1 ;;
+            */* | . | .. | -* )
+              echo "::error::tag '$TAG' cannot be a directory name on the" \
+                   "release-assets branch. Use a flat tag such as v1.2.3."
+              exit 1 ;;
+          esac
+          echo "tag '$TAG' is usable as a directory name"
+
+      - name: refuse an image too large to mirror
+        run: |
+          set -euo pipefail
+          for f in dist/*.bin; do
+            size=$(stat -c%s "$f")
+            if [ "$size" -gt 52428800 ]; then
+              echo "::error::$(basename "$f") is $size bytes; too large to serve" \
+                   "from raw.githubusercontent. The flasher would 404."
+              exit 1
+            fi
+          done
+          echo "all images are within the size raw.githubusercontent serves"
 
       # Publish the same images somewhere a BROWSER may read them.
       #
@@ -143,18 +181,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # GitHub blocks a push containing a file over 100 MB. Fail loudly
-          # rather than skip: a silent skip leaves the flasher pointing at a
-          # URL that 404s, which reads as a broken release.
-          for f in dist/*.bin; do
-            size=$(stat -c%s "$f")
-            if [ "$size" -gt 52428800 ]; then
-              echo "::error::$(basename "$f") is $size bytes; too large to serve" \
-                   "from raw.githubusercontent. The flasher would 404."
-              exit 1
-            fi
-          done
-
           work=$(mktemp -d)
           staged=$PWD/dist
 
@@ -182,14 +208,37 @@ jobs:
           git init -q -b release-assets
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git fetch -q --depth 1 "$remote" release-assets 2>/dev/null; then
-            git checkout -q FETCH_HEAD -- . 2>/dev/null || true
-            echo "existing tags on the branch:"
-            find . -mindepth 1 -maxdepth 1 -type d -not -name '.*' \
-              -printf '  %f\n' | sort -V
-          else
-            echo "release-assets does not exist yet; creating it"
-          fi
+          # Tell "the branch does not exist yet" apart from "the fetch
+          # failed". The first is the normal first release; the second means
+          # force-pushing over content we could not read, which is how a
+          # transient network or auth error deletes every other release's
+          # images. Neither the fetch nor the checkout may fail quietly.
+          # Only exit 2 means "no such branch"; 128 means the remote could not
+          # be reached at all. Treating those alike is how an auth or network
+          # failure force-pushes an empty branch over every release's images.
+          set +e
+          git ls-remote --exit-code --heads "$remote" release-assets >/dev/null 2>&1
+          lsr=$?
+          set -e
+          case "$lsr" in
+            0)
+              echo "release-assets exists; restoring it before adding $TAG"
+              git fetch -q --depth 1 "$remote" release-assets
+              git checkout -q FETCH_HEAD -- .
+              echo "existing tags on the branch:"
+              find . -mindepth 1 -maxdepth 1 -type d -not -name '.*' \
+                -printf '  %f\n' | sort -V
+              ;;
+            2)
+              echo "release-assets does not exist yet; creating it"
+              ;;
+            *)
+              echo "::error::could not reach ${REPO} to read release-assets" \
+                   "(git ls-remote exited $lsr). Refusing to publish, because" \
+                   "force-pushing now would delete the other releases' images."
+              exit 1
+              ;;
+          esac
 
           # Re-stage this tag's images over whatever was there, so re-running a
           # release replaces its own directory and leaves the others alone.
@@ -200,18 +249,24 @@ jobs:
           # Keep the branch bounded: newest KEEP tags by commit order, which is
           # the order they were published in. Old firmware stays downloadable
           # from its release; only the browser-readable copy is pruned.
+          # Keep the newest KEEP, and ALWAYS keep the tag this run publishes.
+          # Without that exception, re-publishing an old tag while KEEP newer
+          # ones already exist prunes the directory just written, and the step
+          # then reports success with URLs that 404. Reproduced with v0.1.0
+          # behind five newer tags.
+          #
+          # Sorted by version, not lexically, or v0.10.0 would prune before
+          # v0.6.0.
           KEEP=5
-          mapfile -t tags < <(
-            find . -mindepth 1 -maxdepth 1 -type d -not -name '.*' -printf '%f\n'
+          mapfile -t others < <(
+            find . -mindepth 1 -maxdepth 1 -type d -not -name '.*' -printf '%f\n' \
+              | grep -Fxv -- "$TAG" | sort -rV
           )
-          if [ "${#tags[@]}" -gt "$KEEP" ]; then
-            # Sort by version, newest first, and drop past the keep count.
-            mapfile -t ordered < <(printf '%s\n' "${tags[@]}" | sort -rV)
-            for old in "${ordered[@]:$KEEP}"; do
-              echo "pruning $old"
-              rm -rf -- "$old"
-            done
-          fi
+          # One slot belongs to $TAG, so keep KEEP-1 of the others.
+          for old in "${others[@]:$((KEEP - 1))}"; do
+            echo "pruning $old"
+            rm -rf -- "$old"
+          done
 
           # One commit, no history: --force replaces the branch wholesale, and
           # what it contains is everything above rather than this tag alone.
@@ -224,3 +279,12 @@ jobs:
             echo "  https://raw.githubusercontent.com/${REPO}/release-assets/${TAG}/$(basename "$f")"
           done
 
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+        with:
+          # Named explicitly: on a workflow_call there is no release event.
+          tag_name: ${{ inputs.tag || github.event.release.tag_name }}
+          # Fail rather than publish a release missing a chip's firmware: a
+          # silently incomplete release is worse than a failed one, because the
+          # registry would index it and offer owners of that chip nothing.
+          fail_on_unmatched_files: true
+          files: dist/*.bin
