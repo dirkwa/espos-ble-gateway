@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: 2026 Dirk Wahrheit
+# SPDX-License-Identifier: Apache-2.0
+#
+# ESP32-C5: WiFi buffer pools sized for the RAM this chip actually has.
+#
+# The C5 is single-core with ~166 KiB of internal RAM available for dynamic
+# allocation (heap_init reports "At 40832AD0 len 00029AD0 (166 KiB)"), and this
+# firmware runs WiFi in STA+softAP, an HTTP server and Bluedroid on it. The IDF
+# defaults are sized for a chip with more headroom, and on this one they let the
+# radio take a third of internal RAM before anything else has asked:
+#
+#   static  RX 10 x 1704 B = 16.6 KB   allocated up front
+#   dynamic RX 32 x 1704 B = 53.2 KB   on demand
+#   -> 69.9 KB of 166 KB, for receive buffers alone
+#
+# Measured with heap tracing on a Waveshare ESP32-C5 (espOS issue #124): with
+# the setup portal up and nothing draining the stack, 20 of the 1704 B dynamic
+# buffers were outstanding after 25 s (34 KB) and internal free fell from 172 KB
+# to 16 KB. Bluedroid then cannot start at all -- "BLE unavailable:
+# ESP_ERR_NO_MEM" -- so the gateway never does its job.
+#
+# The buffer size is the giveaway: the boot log prints "Init static rx buffer
+# size: 1700", and 1704 is that plus the allocator header.
+#
+# A dynamic RX buffer is freed once the TCP/IP stack has taken the frame
+# (esp_wifi Kconfig), so these are meant to be transient and the pool only
+# climbs when delivery is not keeping up. Capping it does not stop that
+# happening; it bounds what it can cost.
+#
+# Measured on the board, portal up and no SignalK server, before -> after:
+#
+#   reboots in 5 min      loop (~30 s apart)   0
+#   internal RAM          "exhausted" in 10 s  "low" only, no alarm
+#   health strikes        3/3 -> reboot        0
+#
+# What it does NOT fix, and this is the honest limit of this change: internal
+# RAM still falls ~270 B per 10 s health tick (20312 -> 16232 B over 150 s), so
+# it would reach the 12 KB alarm floor in roughly 15 minutes, and Bluedroid
+# still cannot start ("BLE unavailable: ESP_ERR_NO_MEM"). The remaining drain
+# is unexplained and tracked in espOS issue #124. This fragment turns an
+# immediate reboot loop into a slow decline, which is worth having on its own
+# but is not the whole fix.
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=12
+
+# TX likewise: 32 buffers is throughput sizing, and this firmware sends small
+# JSON deltas and BLE advertisement reports, not bulk data.
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=12
+
+# Management frames: 32 is generous for a device that associates with one AP
+# and serves a handful of portal clients.
+CONFIG_ESP_WIFI_MGMT_SBUF_NUM=16
+
+# AMPDU RX stays enabled -- disabling it costs real throughput -- but the block
+# ack window is what decides how many frames may be in flight unacknowledged,
+# and 6 is already IDF's non-PSRAM default. Left explicit so a future PSRAM
+# build does not silently inherit the 16 that SPIRAM_TRY_ALLOCATE_WIFI_LWIP
+# would select on a chip that has none to spare.
+CONFIG_ESP_WIFI_RX_BA_WIN=6
