@@ -34,12 +34,14 @@
 #   health strikes        3/3 -> reboot        0
 #
 # What it does NOT fix, and this is the honest limit of this change: internal
-# RAM still falls ~270 B per 10 s health tick (20312 -> 16232 B over 150 s), so
-# it would reach the 12 KB alarm floor in roughly 15 minutes, and Bluedroid
-# still cannot start ("BLE unavailable: ESP_ERR_NO_MEM"). The remaining drain
-# is unexplained and tracked in espOS issue #124. This fragment turns an
-# immediate reboot loop into a slow decline, which is worth having on its own
-# but is not the whole fix.
+# RAM still falls ~270 B per 10 s health tick (measured 20312 -> 16232 B over
+# 150 s, so 27 B/s), and Bluedroid still cannot start ("BLE unavailable:
+# ESP_ERR_NO_MEM"). From 20 KB free that reaches the 12 KB alarm floor in about
+# 5 minutes, not the 15 an earlier version of this comment claimed -- the
+# mitigation buys minutes, not quarter-hours. What it does buy is a device that
+# declines slowly instead of reboot-looping within 30 s, which is the difference
+# between "usable long enough to configure" and "unusable". The remaining drain
+# is unexplained and tracked in espOS issue #124.
 CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=12
 
 # TX likewise: 32 buffers is throughput sizing, and this firmware sends small

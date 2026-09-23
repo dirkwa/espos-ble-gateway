@@ -129,6 +129,8 @@ jobs:
       - name: refuse a tag the mirror cannot lay out
         env:
           TAG: ${{ inputs.tag || github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           case "$TAG" in
@@ -140,6 +142,21 @@ jobs:
               exit 1 ;;
           esac
           echo "tag '$TAG' is usable as a directory name"
+
+          # And it must name a release that exists. The mirror runs before the
+          # release step (so a release is never published without a
+          # browser-readable copy), which means a mistyped workflow_dispatch tag
+          # would otherwise mutate the shared branch -- and prune a real
+          # release's images to make room -- for a release that was never going
+          # to exist. On the `release:` trigger this is already true by
+          # construction; the check costs one API call and covers the manual
+          # path.
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "::error::no release '$TAG' in ${REPO}. Create the release" \
+                 "first, or re-run for a tag that exists."
+            exit 1
+          fi
+          echo "release '$TAG' exists"
 
       - name: refuse an image too large to mirror
         run: |
@@ -228,6 +245,14 @@ jobs:
               echo "existing tags on the branch:"
               find . -mindepth 1 -maxdepth 1 -type d -not -name '.*' \
                 -printf '  %f\n' | sort -V
+              # Keep the branch exactly as it was, so a later failure to attach
+              # the release assets can put it back rather than leaving the
+              # mirror advertising images the release does not have.
+              snapshot="${RUNNER_TEMP}/release-assets-before"
+              rm -rf "$snapshot"
+              git clone -q --depth 1 --branch release-assets \
+                "$remote" "$snapshot" 2>/dev/null \
+                || echo "::warning::could not snapshot release-assets; no rollback will be possible"
               ;;
             2)
               echo "release-assets does not exist yet; creating it"
@@ -279,7 +304,14 @@ jobs:
             echo "  https://raw.githubusercontent.com/${REPO}/release-assets/${TAG}/$(basename "$f")"
           done
 
+      # If attaching the assets fails after the mirror has published, the
+      # branch advertises images for a release that has none. Roll the mirror
+      # back to what it held before this run, so the two never disagree.
+      #
+      # Only ever on failure, and only for this tag: it re-pushes the snapshot
+      # taken before the mirror step, which is why that step records one.
       - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+        id: attach
         with:
           # Named explicitly: on a workflow_call there is no release event.
           tag_name: ${{ inputs.tag || github.event.release.tag_name }}
@@ -288,3 +320,24 @@ jobs:
           # registry would index it and offer owners of that chip nothing.
           fail_on_unmatched_files: true
           files: dist/*.bin
+
+      - name: roll the mirror back if the assets did not attach
+        if: failure() && steps.attach.outcome == 'failure'
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          snapshot="${RUNNER_TEMP}/release-assets-before"
+          if [ ! -d "$snapshot/.git" ]; then
+            echo "::warning::no pre-mirror snapshot to restore; the" \
+                 "release-assets branch may advertise $TAG with no assets" \
+                 "attached to the release."
+            exit 0
+          fi
+          cd "$snapshot"
+          git push -q --force \
+            "https://x-access-token:${TOKEN}@github.com/${REPO}.git" \
+            release-assets
+          echo "release-assets restored to its state before this run"
