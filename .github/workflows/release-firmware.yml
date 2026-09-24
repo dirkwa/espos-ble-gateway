@@ -323,7 +323,6 @@ jobs:
       # Only ever on failure, and only for this tag: it re-pushes the snapshot
       # taken before the mirror step, which is why that step records one.
       - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
-        id: attach
         with:
           # Named explicitly: on a workflow_call there is no release event.
           tag_name: ${{ inputs.tag || github.event.release.tag_name }}
@@ -333,8 +332,18 @@ jobs:
           fail_on_unmatched_files: true
           files: dist/*.bin
 
-      - name: roll the mirror back if the assets did not attach
-        if: failure() && steps.attach.outcome == 'failure'
+      # Any failure after the mirror pushed, not only a failed attach. The
+      # narrower `steps.attach.outcome == 'failure'` missed the case it most
+      # needed to catch: if the mirror step pushes and then fails on a later
+      # line, `attach` is SKIPPED rather than failed, so the branch was left
+      # advertising a tag whose release has no assets -- exactly the state this
+      # step exists to undo.
+      #
+      # Safe to widen because this is the last step and the restore is guarded:
+      # a failure before the mirror ran leaves neither snapshot nor
+      # was-absent marker, so it warns and exits 0 without touching anything.
+      - name: roll the mirror back if anything after it failed
+        if: failure()
         env:
           TAG: ${{ inputs.tag || github.event.release.tag_name }}
           REPO: ${{ github.repository }}
