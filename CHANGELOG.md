@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/dirkwa/espos-ble-gateway/compare/v0.3.0...v0.3.1) (2026-09-24)
+
+
+### Fixed
+
+* bump espos to v0.10.3 for the two C5 stability fixes ([#22](https://github.com/dirkwa/espos-ble-gateway/issues/22)) ([dd0c8c0](https://github.com/dirkwa/espos-ble-gateway/commit/dd0c8c0370d1810420ccd674753fe43d10859398))
+* **esp32c5:** size the WiFi buffers for this chip, and harden the release mirror ([#20](https://github.com/dirkwa/espos-ble-gateway/issues/20)) ([72cb9b8](https://github.com/dirkwa/espos-ble-gateway/commit/72cb9b8ce0cef68749fd0822d732b1b22a80c04c))
+
 ## [0.3.0](https://github.com/dirkwa/espos-ble-gateway/compare/v0.2.0...v0.3.0) (2026-09-22)
 
 
