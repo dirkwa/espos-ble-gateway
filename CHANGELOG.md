@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/dirkwa/espos-ble-gateway/compare/v0.3.1...v0.3.2) (2026-09-24)
+
+
+### Fixed
+
+* **ci:** roll the mirror back on any failure, not only a failed attach ([#23](https://github.com/dirkwa/espos-ble-gateway/issues/23)) ([400baa5](https://github.com/dirkwa/espos-ble-gateway/commit/400baa5647ab9699e801006a4e69c9008b6ab09f))
+
 ## [0.3.1](https://github.com/dirkwa/espos-ble-gateway/compare/v0.3.0...v0.3.1) (2026-09-24)
 
 
