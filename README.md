@@ -20,8 +20,9 @@ espOS brings up logging, config, the web UI, WiFi, SignalK, OTA and — because
 
 | Board | Radio | Flash | Status |
 |---|---|---|---|
-| Waveshare ESP32-P4 (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | 16 MB | verified |
-| ESP32 / C3 / S3 / C6 / C5 | native Bluedroid | 16 MB as shipped | builds; not yet run |
+| Waveshare ESP32-P4 (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | 16 MB | **in daily use**: two gateways, 4.3 M and 41 M advertisements forwarded |
+| ESP32 / C3 / S3 / C6 | native Bluedroid | 16 MB as shipped | buildable, not verified on hardware |
+| **ESP32-C5** | native Bluedroid | — | **does not work — do not buy one for this** |
 
 **As cloned, this builds a 16 MB image on every target**: `partitions.csv` is a
 16 MB table and `sdkconfig.defaults` sets `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`.
@@ -103,7 +104,7 @@ git clone --recursive https://github.com/dirkwa/espos-ble-gateway
 cd espos-ble-gateway
 . ~/esp-idf-v6.0.3/export.sh
 
-# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 / esp32c5 the same way
+# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 the same way (not esp32c5 -- see above)
 espos/scripts/build.sh -B build-esp32p4 -DSDKCONFIG=build-esp32p4/sdkconfig -DIDF_TARGET=esp32p4 build
 idf.py -B build-esp32p4 -p /dev/ttyACM0 flash monitor
 ```
@@ -200,10 +201,41 @@ advertisement drops are counted honestly.
 Not carried over: that gateway's **NimBLE** backend, which was scan-only. The
 archived repository remains the only place it exists.
 
-The C5 itself is built here (Bluedroid, like the other native-radio chips) but
-has not been run on hardware -- the table above says so. It is in CI and in the
-release matrix so an image exists to test with; treat it as build-tested, not
-verified.
+### The ESP32-C5 does not work, and this is not a "not yet tried"
+
+It has now been run, and it fails. Which way it fails depends on whether PSRAM is
+enabled, and both ends are dead:
+
+**As this repo builds it (no PSRAM).** The BLE controller never starts:
+
+```
+W BLE_INIT: r_ble_controller_init failed 257
+E espos_ble_backend: bt_controller_init: ESP_ERR_NO_MEM -- internal heap 30844 B
+  free, largest block 15360 B; the controller needs ~24 KB CONTIGUOUS
+```
+
+257 is `ESP_ERR_NO_MEM`. WiFi and the Signal K client keep working, so the device is
+useful -- as a WiFi/Signal K node, with no BLE. That is the failure
+[espOS#127](https://github.com/signalk-espOS/espOS/issues/127) is named after.
+
+**With `CONFIG_SPIRAM` enabled.** The controller does start, and then the board
+reboots after about 30 seconds. BLE plus WiFi plus the Signal K client comes to
+~157 KB of the ~172 KB of internal RAM free at `app_main`, so the gateway's HTTP
+posts start failing and the health watchdog restarts the device. Per-stage
+measurements are in
+[the #127 thread](https://github.com/signalk-espOS/espOS/issues/127#issuecomment-5850730258)
+and in
+[hardware.md](https://github.com/signalk-espOS/espOS/blob/main/docs/hardware.md#the-esp32-c5-cannot-host-the-ble-gateway).
+
+So PSRAM does not rescue it: enabling it is what lets the controller start at all
+(it needs ~24 KB contiguous), but what remains is task stacks and radio DMA buffers,
+which as this firmware is built come from internal RAM.
+
+A C5 is a capable WiFi/Signal K board -- sensors, relays, switch panels. It is not
+a BLE bridge. Use an ESP32-P4, or a C6, S3 or ESP32.
+
+An earlier version of this file said to "treat it as build-tested, not verified",
+which was fair when nobody had tried it and is misleading now that somebody has.
 
 ## License
 

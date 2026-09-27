@@ -67,6 +67,9 @@ jobs:
       matrix:
         # esp32p4 is the reference board (BLE via the C6 co-processor); the
         # others exercise the native-Bluedroid path.
+        # esp32c5 stays HERE, unlike in release-firmware.yml: the firmware does
+        # not run on that board but it must keep compiling, so a change that
+        # breaks the native-Bluedroid path is still caught.
         target: [esp32p4, esp32, esp32s3, esp32c3, esp32c6, esp32c5]
     steps:
       # fetch-depth: 0 because the version baked into the image comes from

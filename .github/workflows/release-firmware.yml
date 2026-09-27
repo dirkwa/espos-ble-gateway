@@ -44,7 +44,12 @@ jobs:
       # below still requires them all, so a partial build does not ship.
       fail-fast: false
       matrix:
-        target: [esp32p4, esp32c5, esp32c6, esp32c3, esp32s3, esp32]
+        # No esp32c5: the firmware builds there and does not run -- the board
+        # reboots after ~30 s on the health watchdog (see README, espOS#127).
+        # Publishing a signed image for it means the registry and the web flasher
+        # can offer a download that cannot work, which is worse than offering
+        # nothing.
+        target: [esp32p4, esp32c6, esp32c3, esp32s3, esp32]
     # @main, matching what espOS documents for this workflow (docs/releasing.md
     # and the workflow's own header). Every THIRD-PARTY action in this repo is
     # SHA-pinned, and that asymmetry is deliberate:
