@@ -203,17 +203,33 @@ archived repository remains the only place it exists.
 
 ### The ESP32-C5 does not work, and this is not a "not yet tried"
 
-It has now been run, and it fails. The firmware builds and the radio scans, and
-then the board reboots after about 30 seconds: BLE plus WiFi plus the Signal K
-client comes to ~157 KB of the ~172 KB of internal RAM free at `app_main`, so the
-gateway's HTTP posts start failing and the health watchdog restarts the device.
+It has now been run, and it fails. Which way it fails depends on whether PSRAM is
+enabled, and both ends are dead:
 
-Its 8 MB of PSRAM does not rescue it. Enabling `CONFIG_SPIRAM` *is* what lets the
-BLE controller start at all -- it needs ~24 KB in one contiguous block -- but what
-remains is task stacks and radio DMA buffers, which as this firmware is built come
-from internal RAM. Per-stage measurements are in
-[espOS#127](https://github.com/signalk-espOS/espOS/issues/127) and
+**As this repo builds it (no PSRAM).** The BLE controller never starts:
+
+```
+W BLE_INIT: r_ble_controller_init failed 257
+E espos_ble_backend: bt_controller_init: ESP_ERR_NO_MEM -- internal heap 30844 B
+  free, largest block 15360 B; the controller needs ~24 KB CONTIGUOUS
+```
+
+257 is `ESP_ERR_NO_MEM`. WiFi and the Signal K client keep working, so the device is
+useful -- as a WiFi/Signal K node, with no BLE. That is the failure
+[espOS#127](https://github.com/signalk-espOS/espOS/issues/127) is named after.
+
+**With `CONFIG_SPIRAM` enabled.** The controller does start, and then the board
+reboots after about 30 seconds. BLE plus WiFi plus the Signal K client comes to
+~157 KB of the ~172 KB of internal RAM free at `app_main`, so the gateway's HTTP
+posts start failing and the health watchdog restarts the device. Per-stage
+measurements are in
+[the #127 thread](https://github.com/signalk-espOS/espOS/issues/127#issuecomment-5850730258)
+and in
 [hardware.md](https://github.com/signalk-espOS/espOS/blob/main/docs/hardware.md#the-esp32-c5-cannot-host-the-ble-gateway).
+
+So PSRAM does not rescue it: enabling it is what lets the controller start at all
+(it needs ~24 KB contiguous), but what remains is task stacks and radio DMA buffers,
+which as this firmware is built come from internal RAM.
 
 A C5 is a capable WiFi/Signal K board -- sensors, relays, switch panels. It is not
 a BLE bridge. Use an ESP32-P4, or a C6, S3 or ESP32.
