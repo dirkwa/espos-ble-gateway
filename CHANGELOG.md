@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/dirkwa/espos-ble-gateway/compare/v0.3.2...v1.0.0) (2026-10-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* espOS v0.14.0, which moves the hosted transport to esp_hosted 3.x ([#26](https://github.com/dirkwa/espos-ble-gateway/issues/26))
+
+### Internal
+
+* espOS v0.14.0, which moves the hosted transport to esp_hosted 3.x ([#26](https://github.com/dirkwa/espos-ble-gateway/issues/26)) ([17d9d1a](https://github.com/dirkwa/espos-ble-gateway/commit/17d9d1a5ebcd5709612845c9f2089c651d8bd58c))
+
 ## [0.3.2](https://github.com/dirkwa/espos-ble-gateway/compare/v0.3.1...v0.3.2) (2026-09-24)
 
 
