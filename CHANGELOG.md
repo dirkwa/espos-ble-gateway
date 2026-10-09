@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/dirkwa/espos-ble-gateway/compare/v1.0.0...v1.0.1) (2026-10-09)
+
+
+### Fixed
+
+* **p4:** run on every Waveshare P4 board, not only PoE ([#29](https://github.com/dirkwa/espos-ble-gateway/issues/29)) ([aaca9d8](https://github.com/dirkwa/espos-ble-gateway/commit/aaca9d867e784249172e6b56b12b2927db30b655))
+
 ## [1.0.0](https://github.com/dirkwa/espos-ble-gateway/compare/v0.3.2...v1.0.0) (2026-10-03)
 
 
