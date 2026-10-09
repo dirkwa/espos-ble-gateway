@@ -21,6 +21,7 @@ espOS brings up logging, config, the web UI, WiFi, SignalK, OTA and — because
 | Board | Radio | Flash | Status |
 |---|---|---|---|
 | Waveshare ESP32-P4 (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | 16 MB | **in daily use**: two gateways, 4.3 M and 41 M advertisements forwarded |
+| Waveshare ESP32-P4 Touch-LCD-7B / -X (same P4 image, on WiFi) | HCI at the C6 via esp_hosted | 16 MB | buildable, not verified on hardware |
 | ESP32 / C3 / S3 / C6 | native Bluedroid | 16 MB as shipped | buildable, not verified on hardware |
 | **ESP32-C5** | native Bluedroid | — | **does not work — do not buy one for this** |
 
@@ -125,6 +126,13 @@ sdkconfig only — delete `build*/sdkconfig` after changing them.
 
 On first boot the device raises a WiFi provisioning portal (`espOS-xxxx`).
 Join it and pick a network; from then on everything is at `http://<device>/`.
+
+On the Waveshare P4 POE-ETH the cable carries the network and the portal stays
+down while it has an address. A gateway that also has a stored WiFi network
+joins it beside the cable, and the station then shares the C6 radio with the
+BLE scanner: set `wifi.sta_enabled` to false to give the radio to BLE alone.
+The display boards (Touch-LCD-7B and -X) have no Ethernet and run on WiFi; the
+screen stays dark, since the gateway does not drive it.
 
 Credentials live in NVS, never in the firmware image. To provision without
 the portal, see [espos/docs/wifi.md](espos/docs/wifi.md) — put them in a CSV

@@ -36,6 +36,15 @@ jobs:
       # IDF's linux target needs libbsd (espos/docs/development.md).
       - run: sudo apt-get update && sudo apt-get install -y libbsd-dev
 
+      # See the firmware job.
+      - name: log in to Docker Hub
+        if: vars.DOCKERHUB_USERNAME != ''
+        continue-on-error: true
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: ${{ steps.idf.outputs.version }}
@@ -87,6 +96,20 @@ jobs:
       - name: read pinned IDF version
         id: idf
         run: echo "version=$(cat .idf-version)" >> "$GITHUB_OUTPUT"
+
+      # Docker Hub caps anonymous image pulls per runner IP, and the shared
+      # GitHub runners hit that cap often enough to fail whole matrix legs
+      # before they compile. Logging in gives the run an account's own
+      # allowance. Without the variable, or when the login itself fails (a
+      # revoked token, a fork without the secret), the pull is anonymous as
+      # before rather than the leg failing here.
+      - name: log in to Docker Hub
+        if: vars.DOCKERHUB_USERNAME != ''
+        continue-on-error: true
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # CMake generates a throwaway signing key when none is present, which is
       # right for CI: these images are never released. A real release must
