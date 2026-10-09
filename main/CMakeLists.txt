@@ -7,9 +7,9 @@
 # nothing requires is not compiled at all, and espos_start() starts only what
 # is in the build. Dropping espos_ble here would build a gateway without the
 # gateway; dropping espos_ota, one that can never be updated in the field;
-# dropping espos_eth, a P4 on PoE with no network at all, since that board
-# turns the WiFi station off (sdkconfig.defaults.esp32p4). On a target with no
-# EMAC espos_eth compiles to stubs and the station is the network.
+# dropping espos_eth, a P4 on PoE that falls back to WiFi rather than using
+# its cable. On a target with no EMAC espos_eth compiles to stubs and the
+# station is the network.
 idf_component_register(
     SRCS main.c
     PRIV_REQUIRES espos_core espos_ble espos_eth espos_ota)
