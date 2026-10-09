@@ -20,7 +20,8 @@ espOS brings up logging, config, the web UI, WiFi, SignalK, OTA and — because
 
 | Board | Radio | Flash | Status |
 |---|---|---|---|
-| Waveshare ESP32-P4: POE-ETH, Touch-LCD-7B, Touch-LCD-X (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | 16 MB | **in daily use**: two gateways, 4.3 M and 41 M advertisements forwarded |
+| Waveshare ESP32-P4 (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | 16 MB | **in daily use**: two gateways, 4.3 M and 41 M advertisements forwarded |
+| Waveshare ESP32-P4 Touch-LCD-7B / -X (same P4 image, on WiFi) | HCI at the C6 via esp_hosted | 16 MB | buildable, not verified on hardware |
 | ESP32 / C3 / S3 / C6 | native Bluedroid | 16 MB as shipped | buildable, not verified on hardware |
 | **ESP32-C5** | native Bluedroid | — | **does not work — do not buy one for this** |
 
