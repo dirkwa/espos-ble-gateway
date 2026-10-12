@@ -58,3 +58,21 @@ CONFIG_ESP_WIFI_MGMT_SBUF_NUM=16
 # build does not silently inherit the 16 that SPIRAM_TRY_ALLOCATE_WIFI_LWIP
 # would select on a chip that has none to spare.
 CONFIG_ESP_WIFI_RX_BA_WIN=6
+
+# --- PSRAM: what makes Bluedroid fit (signalk-espOS/espOS#207) ----------------
+#
+# Everything above bounds what WiFi can take; it never made room for BLE. The
+# C5 modules carry 8 MB of PSRAM, which the defaults leave off. With it on, only
+# the BLE controller, WiFi/lwIP and DMA buffers have to stay internal. The block
+# below matches espOS's ble_gateway example for this target; docs/hardware.md
+# there has the measurements, and the rev v1.0 note on PSRAM encryption.
+CONFIG_SPIRAM=y
+CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST=y
+CONFIG_BT_BLE_DYNAMIC_ENV_MEMORY=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=256
+CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=32768
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+# Static RX buffers must be internal; 6 (= the block-ack window) frees 6.4 KB,
+# which is what lets the control WebSocket fit beside everything else.
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
+# NOT CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP: the station never associates with it.
