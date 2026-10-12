@@ -23,6 +23,11 @@ jobs:
   # it is fast and catches the errors a firmware build cannot.
   host-tests:
     runs-on: ubuntu-latest
+    # Both are secrets. A step's if: cannot read secrets, so the job
+    # exposes whether they are set; a fork or a run without them skips the
+    # login and pulls anonymously.
+    env:
+      DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,11 +43,11 @@ jobs:
 
       # See the firmware job.
       - name: log in to Docker Hub
-        if: vars.DOCKERHUB_USERNAME != ''
+        if: env.DOCKERHUB_LOGIN == 'true'
         continue-on-error: true
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - uses: espressif/esp-idf-ci-action@v1
@@ -71,6 +76,11 @@ jobs:
 
   firmware:
     runs-on: ubuntu-latest
+    # Both are secrets. A step's if: cannot read secrets, so the job
+    # exposes whether they are set; a fork or a run without them skips the
+    # login and pulls anonymously.
+    env:
+      DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -104,11 +114,11 @@ jobs:
       # revoked token, a fork without the secret), the pull is anonymous as
       # before rather than the leg failing here.
       - name: log in to Docker Hub
-        if: vars.DOCKERHUB_USERNAME != ''
+        if: env.DOCKERHUB_LOGIN == 'true'
         continue-on-error: true
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # CMake generates a throwaway signing key when none is present, which is
