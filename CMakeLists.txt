@@ -30,6 +30,18 @@ espos_project_prologue(NAME "ble-gateway" PARTITIONS "${CMAKE_CURRENT_LIST_DIR}/
 
 project(ble_gateway)
 
+# The ESP32-C5 runs this firmware only on espOS 0.18.0 or newer: PSRAM in use
+# (sdkconfig.defaults.esp32c5) needs espOS's TLS pre-flight to measure PSRAM,
+# and a shared radio needs the gateway to stop scanning while the station
+# associates (signalk-espOS/espOS#207). Built against an older espos submodule,
+# the image would still boot -- and refuse every TLS handshake and take minutes
+# to join WiFi. Refusing the build is what keeps such an image out of a release.
+idf_build_get_property(_target IDF_TARGET)
+file(STRINGS "${CMAKE_CURRENT_LIST_DIR}/espos/version.txt" _espos_version LIMIT_COUNT 1)
+if(_target STREQUAL "esp32c5" AND _espos_version VERSION_LESS "0.18.0")
+    message(FATAL_ERROR "ble-gateway on esp32c5 needs espOS >= 0.18.0; the espos submodule is at ${_espos_version}")
+endif()
+
 # The committed espOS web UI (espos/ui/dist-gz) → LittleFS "storage" image,
 # flashed with `idf.py flash`. No Node step anywhere.
 espos_project_ui_partition(NAME "ble-gateway")

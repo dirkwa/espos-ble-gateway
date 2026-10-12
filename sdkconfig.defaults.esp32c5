@@ -33,6 +33,9 @@
 #   internal RAM          "exhausted" in 10 s  "low" only, no alarm
 #   health strikes        3/3 -> reboot        0
 #
+# The rest of this paragraph describes the build WITHOUT PSRAM; the PSRAM block
+# below is what lets Bluedroid start.
+#
 # What it does NOT fix, and this is the honest limit of this change: internal
 # RAM still falls ~270 B per 10 s health tick (measured 20312 -> 16232 B over
 # 150 s, so 27 B/s), and Bluedroid still cannot start ("BLE unavailable:
@@ -58,3 +61,35 @@ CONFIG_ESP_WIFI_MGMT_SBUF_NUM=16
 # build does not silently inherit the 16 that SPIRAM_TRY_ALLOCATE_WIFI_LWIP
 # would select on a chip that has none to spare.
 CONFIG_ESP_WIFI_RX_BA_WIN=6
+
+# --- PSRAM: what makes Bluedroid fit (signalk-espOS/espOS#207) ----------------
+#
+# Everything above bounds what WiFi can take; it never made room for BLE. The
+# C5 modules carry 8 MB of PSRAM, which the defaults leave off. With it on, only
+# the BLE controller, WiFi/lwIP and DMA buffers have to stay internal. The block
+# below matches espOS's ble_gateway example for this target; docs/hardware.md
+# there has the measurements, and the rev v1.0 note on PSRAM encryption.
+CONFIG_SPIRAM=y
+CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST=y
+CONFIG_BT_BLE_DYNAMIC_ENV_MEMORY=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=256
+CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=32768
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+# Static RX buffers must be internal; 6 (= the block-ack window) frees 6.4 KB,
+# which is what lets the control WebSocket fit beside everything else.
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
+# WiFi library code back to flash. On the C5 code and data share one SRAM,
+# so every KB of IRAM the driver claims for speed is a KB less heap. IDF puts
+# these four in IRAM by default on a WiFi 6 part (IRAM_OPT >10 KB, RX >17 KB,
+# EXTRA >5 KB, SLP ~7 KB per their Kconfig help); the cost of moving them is
+# throughput, which a gateway posting a few KB every 2 s does not use. Matches
+# espOS's ble_gateway example (signalk-espOS/espOS#214), where it raised the
+# internal-RAM low point from 15.8 to 25.5 KB. Interrupt handlers stay in IRAM.
+CONFIG_ESP_WIFI_IRAM_OPT=n
+CONFIG_ESP_WIFI_RX_IRAM_OPT=n
+CONFIG_ESP_WIFI_EXTRA_IRAM_OPT=n
+CONFIG_ESP_WIFI_SLP_IRAM_OPT=n
+# NOT CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP: the station never associates with it.
+# mDNS's task stack and allocations in PSRAM too: neither touches flash.
+CONFIG_MDNS_TASK_CREATE_FROM_SPIRAM=y
+CONFIG_MDNS_MEMORY_ALLOC_SPIRAM=y
