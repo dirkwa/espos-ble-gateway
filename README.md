@@ -105,7 +105,9 @@ git clone --recursive https://github.com/dirkwa/espos-ble-gateway
 cd espos-ble-gateway
 . ~/esp-idf-v6.0.3/export.sh
 
-# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 / esp32c5 the same way
+# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 the same way.
+# esp32c5 too, but only with espos at espOS 0.18.0 or newer: the build refuses
+# an older submodule (CMakeLists.txt), because the C5 needs espOS#207.
 espos/scripts/build.sh -B build-esp32p4 -DSDKCONFIG=build-esp32p4/sdkconfig -DIDF_TARGET=esp32p4 build
 idf.py -B build-esp32p4 -p /dev/ttyACM0 flash monitor
 ```
@@ -225,8 +227,9 @@ with no BLE. That is the failure
 what releases up to this one shipped no C5 image for.
 
 **With PSRAM in use it runs.** `sdkconfig.defaults.esp32c5` turns on the module's
-8 MB and moves into it the Bluedroid host heap, small allocations and TLS
-buffers. It also cuts the WiFi driver's static RX buffers from 10 to 6. espOS
+8 MB and moves into it the Bluedroid host heap, every allocation larger than
+256 bytes (`CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=256`; the default keeps anything
+under 16 KB internal) and TLS buffers. It also cuts the WiFi driver's static RX buffers from 10 to 6. espOS
 (from [#207](https://github.com/signalk-espOS/espOS/pull/207)) stops scanning
 until the station has an address: at a 50 % scan duty cycle, every association
 failed with reason 36. Measured on a Waveshare ESP32-C5-WIFI6-KIT-N16R8 with this
