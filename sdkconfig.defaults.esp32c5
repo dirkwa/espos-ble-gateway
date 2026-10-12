@@ -58,3 +58,35 @@ CONFIG_ESP_WIFI_MGMT_SBUF_NUM=16
 # build does not silently inherit the 16 that SPIRAM_TRY_ALLOCATE_WIFI_LWIP
 # would select on a chip that has none to spare.
 CONFIG_ESP_WIFI_RX_BA_WIN=6
+
+# --- PSRAM: what lets BLE run here at all -------------------------------
+# Everything above trims internal RAM; it does not make BLE + WiFi + the
+# SignalK client fit (~157 KB of ~172 KB). The C5 modules carry 8 MB of
+# PSRAM, and these lines move into it what does not have to be internal,
+# leaving internal RAM to the BLE controller (~24 KB contiguous), WiFi/lwIP
+# and DMA buffers. Same settings as espOS's ble_gateway example (espOS #207),
+# where a Waveshare ESP32-C5-WIFI6-KIT-N16R8 forwarded advertisements with
+# internal RAM bottoming out at ~15 KB, above the 12 KB health alarm.
+#
+# Not a bootloader option on the C5 (esp_psram_init() runs from
+# cpu_start.c), so it ships by OTA.
+CONFIG_SPIRAM=y
+
+# The Bluedroid host heap; only the controller needs internal memory.
+CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST=y
+CONFIG_BT_BLE_DYNAMIC_ENV_MEMORY=y
+
+# With PSRAM on, malloc() still keeps every request under 16 KB internal --
+# nearly all of cJSON, httpd and the SignalK client. Requests that need
+# internal or DMA memory ask with caps, and the reserve keeps a pool for them.
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=256
+CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=32768
+
+# TLS record buffers in PSRAM, so a handshake no longer needs 24 KB of
+# contiguous internal RAM. PSRAM is not encrypted on C5 rev v1.0 even with
+# flash encryption on; it is in the package, so reading it takes a decapped
+# chip. A deliberate trade for a board on a boat (espOS docs/hardware.md).
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
+# NOT CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP: with it the station never
+# associates on this part (reason 36 every ~21 s).
