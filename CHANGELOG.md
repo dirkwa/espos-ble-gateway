@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/dirkwa/espos-ble-gateway/compare/v1.0.7...v1.1.0) (2026-10-12)
+
+
+### Added
+
+* **esp32c5:** release an ESP32-C5 image that uses the module's PSRAM ([#47](https://github.com/dirkwa/espos-ble-gateway/issues/47)) ([9bbffe7](https://github.com/dirkwa/espos-ble-gateway/commit/9bbffe74d6f8cc65a89e9ef94021bf1bd7eaa390))
+
+
+### Fixed
+
+* bump espOS to v0.18.0 ([#49](https://github.com/dirkwa/espos-ble-gateway/issues/49)) ([df402be](https://github.com/dirkwa/espos-ble-gateway/commit/df402beee35142bb2d603b088e89685a6f7db2b3))
+
 ## [1.0.7](https://github.com/dirkwa/espos-ble-gateway/compare/v1.0.6...v1.0.7) (2026-10-11)
 
 
