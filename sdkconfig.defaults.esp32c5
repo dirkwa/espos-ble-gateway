@@ -76,3 +76,6 @@ CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
 # which is what lets the control WebSocket fit beside everything else.
 CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
 # NOT CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP: the station never associates with it.
+# mDNS's task stack and allocations in PSRAM too: neither touches flash.
+CONFIG_MDNS_TASK_CREATE_FROM_SPIRAM=y
+CONFIG_MDNS_MEMORY_ALLOC_SPIRAM=y
