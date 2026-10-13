@@ -32,6 +32,11 @@ OTA slots plus the web-UI storage partition come to 5.94 MB, which is why the
 table is sized the way it is. `esptool.py flash_id` reports the flash size of a
 board you are unsure about.
 
+The ESP32-C5 builds with its own table, `partitions-esp32c5.csv`: 6 MB OTA
+slots, because its image already fills 88% of a 2.5 MB slot. A board flashed
+with an older C5 release keeps the 2.5 MB slots until it is flashed over USB
+again, since an OTA never rewrites the partition table.
+
 A **4 MB** board cannot hold that table at all: it runs past the end of the
 chip, and the flash fails partway through writing rather than because the board
 is short of RAM (issue #4).
@@ -191,6 +196,7 @@ main/                app_main() = espos_start(); CMakeLists.txt names the
                      components that make this build a gateway (deliberately thin)
 sdkconfig.defaults*  only what differs from espOS: Bluetooth, PSRAM on the P4
 partitions.csv       needs 16 MB: 2.5 MB OTA slots, LittleFS storage for the UI
+partitions-esp32c5.csv  the C5's: 6 MB OTA slots, same offsets up to ota_0
 scripts/build.sh     forwards to espos/scripts/build.sh
 ```
 

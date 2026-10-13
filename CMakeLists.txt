@@ -23,9 +23,14 @@ cmake_minimum_required(VERSION 3.22)
 # Own partition table rather than the bundled espos/partitions/16mb.csv: the
 # slot offsets differ, and a device keeps the table it was flashed with — OTA
 # replaces app slots, never the table — so switching would turn the next
-# update into a USB reflash. partitions.csv explains its sizing.
+# update into a USB reflash. partitions.csv explains its sizing. The ESP32-C5
+# has its own table with larger app slots (partitions-esp32c5.csv says why).
 include("${CMAKE_CURRENT_LIST_DIR}/espos/cmake/espos_project.cmake")
-espos_project_prologue(NAME "ble-gateway" PARTITIONS "${CMAKE_CURRENT_LIST_DIR}/partitions.csv"
+set(_partitions "${CMAKE_CURRENT_LIST_DIR}/partitions.csv")
+if(IDF_TARGET STREQUAL "esp32c5")
+    set(_partitions "${CMAKE_CURRENT_LIST_DIR}/partitions-esp32c5.csv")
+endif()
+espos_project_prologue(NAME "ble-gateway" PARTITIONS "${_partitions}"
                        COMPONENTS espos_ble espos_eth)
 
 project(ble_gateway)

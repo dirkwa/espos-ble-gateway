@@ -1,0 +1,21 @@
+# espos-ble-gateway on the ESP32-C5 (Waveshare ESP32-C5-WIFI6-KIT, 16 MB).
+#
+# partitions.csv with 6 MB app slots instead of 2.5 MB. The C5 links the BLE
+# controller, Bluedroid and WiFi 6 into one image that already fills 88% of a
+# 2.5 MB slot, while the table used only 5.9 MB of the 16 MB chip. The C5 got
+# its own table while almost no C5 was in the field: a device keeps the table
+# it was flashed with, so only a USB flash moves a board onto this one, and a
+# C5 still on partitions.csv takes OTAs only while the image fits 2.5 MB.
+#
+# Everything before ota_0 is identical to partitions.csv, so NVS and the core
+# dump keep their offsets. Offsets explicit so they cannot drift. The table
+# ends at 0xCF0000, leaving 3 MB of the chip spare.
+# Name,     Type, SubType,  Offset,   Size,     Flags
+nvs,        data, nvs,      0x9000,   0xc000,
+otadata,    data, ota,      0x15000,  0x2000,
+phy_init,   data, phy,      0x17000,  0x1000,
+nvs_keys,   data, nvs_keys, 0x18000,  0x1000,   encrypted
+coredump,   data, coredump, 0x19000,  0x40000,
+ota_0,      app,  ota_0,    0x60000,  0x600000,
+ota_1,      app,  ota_1,    0x660000, 0x600000,
+storage,    data, littlefs, 0xC60000, 0x90000,
