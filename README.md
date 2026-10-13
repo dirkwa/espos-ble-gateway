@@ -22,8 +22,11 @@ espOS brings up logging, config, the web UI, WiFi, SignalK, OTA and — because
 |---|---|---|---|
 | Waveshare ESP32-P4 (+ ESP32-C6 over SDIO) | HCI at the C6 via esp_hosted | 16 MB | **in daily use**: two gateways, 4.3 M and 41 M advertisements forwarded |
 | Waveshare ESP32-P4 Touch-LCD-7B / -X (same P4 image, on WiFi) | HCI at the C6 via esp_hosted | 16 MB | buildable, not verified on hardware |
-| ESP32 / C3 / S3 / C6 | native Bluedroid | 8 or 16 MB | buildable, not verified on hardware |
+| ESP32 / S3 / C6 | native Bluedroid | 8 or 16 MB | buildable, not verified on hardware |
 | Waveshare ESP32-C5-WIFI6-KIT-N16R8 | native Bluedroid, PSRAM in use | 16 MB | **runs**: on the bench, control WebSocket on, internal RAM low-water 15.8 KB; not yet soaked for days or tried with a GATT session |
+
+The ESP32-C3 is not released: its dev kits come with 4 MB of flash, and the
+2.2 MB image does not fit the two OTA slots of a 4 MB table.
 
 **As cloned, this builds a 16 MB image on every target**: `partitions.csv` is a
 16 MB table and `sdkconfig.defaults` sets `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`.
@@ -32,7 +35,7 @@ OTA slots plus the web-UI storage partition come to 5.94 MB, which is why the
 table is sized the way it is. `esptool.py flash_id` reports the flash size of a
 board you are unsure about.
 
-Releases also carry each ESP32, C3, S3 and C6 image laid out with espOS's 8
+Releases also carry each ESP32, S3 and C6 image laid out with espOS's 8
 and 16 MB tables (3 and 6.5 MB slots), and the P4 image with the 16 MB one, as
 `…-merged-8mb.bin` and `…-merged-16mb.bin`. They are the same build, with no
 extra compile, and the update image is the same file. The flasher reads the
@@ -186,7 +189,7 @@ git clone --recursive https://github.com/dirkwa/espos-ble-gateway
 cd espos-ble-gateway
 . ~/esp-idf-v6.0.3/export.sh
 
-# esp32p4 here; esp32 / esp32s3 / esp32c3 / esp32c6 the same way.
+# esp32p4 here; esp32 / esp32s3 / esp32c6 the same way.
 # esp32c5 too, but only with espos at espOS 0.18.0 or newer: the build refuses
 # an older submodule (CMakeLists.txt), because the C5 needs espOS#207.
 espos/scripts/build.sh -B build-esp32p4 -DSDKCONFIG=build-esp32p4/sdkconfig -DIDF_TARGET=esp32p4 build

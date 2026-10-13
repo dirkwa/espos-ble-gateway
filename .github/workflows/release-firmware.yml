@@ -63,8 +63,6 @@ jobs:
             flash_tables: "16mb"
           - target: esp32c6
             flash_tables: "8mb 16mb"
-          - target: esp32c3
-            flash_tables: "8mb 16mb"
           - target: esp32s3
             flash_tables: "8mb 16mb"
           - target: esp32
