@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Dirk Wahrheit
-# SPDX-License-Identifier: LicenseRef-Source-Available-No-Redistribution
+# SPDX-License-Identifier: Apache-2.0
 #
 # Build and release the BLE gateway for every chip it supports.
 #
