@@ -92,6 +92,11 @@ jobs:
       # back to a per-run throwaway key, succeeds, and produces a release that
       # installs over USB and then refuses every OTA.
       signing_key: ${{ secrets.GATEWAY_SIGNING_KEY_PEM }}
+      # Lets the shared build pull the ESP-IDF image logged in rather than on
+      # the runner's shared anonymous allowance. Reaches here on workflow_call
+      # through release-please.yml's `secrets: inherit`, like the key above.
+      dockerhub_username: ${{ vars.DOCKERHUB_USERNAME }}
+      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
 
   release:
     needs: firmware
