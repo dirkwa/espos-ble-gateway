@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/dirkwa/espos-ble-gateway/compare/v1.1.0...v1.2.0) (2026-10-13)
+
+
+### Added
+
+* give the ESP32-C5 6 MB app slots ([#56](https://github.com/dirkwa/espos-ble-gateway/issues/56)) ([5694e45](https://github.com/dirkwa/espos-ble-gateway/commit/5694e45bf82005a6a6b3c41179fd49ce13f6e1cc))
+
+
+### Fixed
+
+* bump espOS to v0.18.1 ([#53](https://github.com/dirkwa/espos-ble-gateway/issues/53)) ([a5dfce3](https://github.com/dirkwa/espos-ble-gateway/commit/a5dfce3e1f87513be964a7c2d3ea399723a4963d))
+
 ## [1.1.0](https://github.com/dirkwa/espos-ble-gateway/compare/v1.0.7...v1.1.0) (2026-10-12)
 
 
