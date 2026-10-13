@@ -48,7 +48,28 @@ jobs:
         # scanning while the station associates); without it the board has no
         # BLE. The espos submodule pin is what guarantees that, so a release
         # that ships a C5 image must be cut after the submodule bump.
-        target: [esp32p4, esp32c6, esp32c3, esp32s3, esp32, esp32c5]
+        #
+        # flash_tables adds a full-flash image per flash size from the same
+        # build, laid out with espOS's table for that size, and the flasher
+        # writes the largest the chip holds. Dev kits are sold with 4 to 32 MB,
+        # and the 16 MB image the release always carried does not start on an
+        # 8 MB one. No 4 MB layout: the 1.8-2.2 MB image does not fit a 4 MB
+        # table's 1728 KB slots. The P4's espOS 16 MB layout has 6.5 MB slots
+        # instead of partitions.csv's 2.5 MB; the C5's own table already has
+        # 6 MB ones. The OTA image is the same for every size, so a table whose
+        # slots it would outgrow fails the build.
+        include:
+          - target: esp32p4
+            flash_tables: "16mb"
+          - target: esp32c6
+            flash_tables: "8mb 16mb"
+          - target: esp32c3
+            flash_tables: "8mb 16mb"
+          - target: esp32s3
+            flash_tables: "8mb 16mb"
+          - target: esp32
+            flash_tables: "8mb 16mb"
+          - target: esp32c5
     # @main, matching what espOS documents for this workflow (docs/releasing.md
     # and the workflow's own header). Every THIRD-PARTY action in this repo is
     # SHA-pinned, and that asymmetry is deliberate:
@@ -77,6 +98,7 @@ jobs:
       # Distinct per leg: two legs uploading one artifact name is an error on
       # upload-artifact v4+.
       artifact: firmware-${{ matrix.target }}
+      flash_tables: ${{ matrix.flash_tables || '' }}
     secrets:
       # The repository secret by its own name, rather than declaring it under
       # this file's own `workflow_call.secrets`. That keeps the secret's name in
