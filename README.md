@@ -98,6 +98,73 @@ already carries BLE with HCI over SDIO.
 PCB antenna; without an external 2.4 GHz antenna on its IPEX connector the
 radio sees nothing at all.
 
+## Install
+
+The easiest way is the hosted flasher at
+<https://signalk-espos.github.io/signalk-espos-manager/flash/>: open it in
+Chrome or Edge, connect the board over USB, pick **BLE Gateway** and your board,
+and it writes the latest release. With the
+[signalk-espos-manager](https://github.com/signalk-espOS/signalk-espos-manager)
+plugin installed on your Signal K server, its Flash page does the same from the
+server's admin UI.
+
+To flash by hand, download the chip's `-merged.bin` from the
+[latest release](https://github.com/dirkwa/espos-ble-gateway/releases/latest)
+(`ble-gateway-<chip>-<tag>-merged.bin`, for example
+`ble-gateway-esp32c6-v1.1.0-merged.bin`) and write it at offset `0x0`:
+
+```sh
+esptool.py --chip esp32c6 -p /dev/ttyUSB0 write_flash 0x0 ble-gateway-esp32c6-v1.1.0-merged.bin
+```
+
+The `-ota.bin` next to it is for over-the-air updates, not for a cable.
+
+## Setup
+
+On first boot the device raises a WiFi provisioning portal (`espOS-xxxx`).
+Join it and pick a network; from then on everything is at `http://<device>/`.
+
+On the Waveshare P4 POE-ETH the cable carries the network and the portal stays
+down while it has an address. A gateway that also has a stored WiFi network
+joins it beside the cable, and the station then shares the C6 radio with the
+BLE scanner: set `wifi.sta_enabled` to false to give the radio to BLE alone.
+The display boards (Touch-LCD-7B and -X) have no Ethernet and run on WiFi; the
+screen stays dark, since the gateway does not drive it.
+
+Credentials live in NVS, never in the firmware image. To provision without
+the portal, see [espos/docs/wifi.md](espos/docs/wifi.md) — put them in a CSV
+**outside the repo**, generate an NVS partition and flash it to `0x9000`.
+
+The gateway finds a SignalK server over mDNS and requests access as
+`ble_gateway <hostname>`; approve it in the server's admin UI under
+Security → Access Requests. On a network with several servers, pin one with
+`sk.server_host` and `sk.server_pin`.
+
+Settings live under the `ble` namespace in the web UI. Defaults are sensible;
+`active_scan` is off deliberately (see [espos/docs/ble.md](espos/docs/ble.md)).
+
+## Updates
+
+Once a gateway is on the network, updates come over the air: the
+signalk-espos-manager plugin lists it, shows when a newer release is out and
+installs it. The gateway accepts only images signed with this project's key,
+so a board that ran another project's firmware (a different signing key) needs
+one USB flash with this firmware first; after that, OTA works. A change to the
+partition table, such as the C5's larger slots, reaches only boards flashed over
+USB, because an OTA never rewrites it.
+
+## Status
+
+`GET /api/v1/ble/status` reports scan, buffer and POST counters — enough to
+tell a BLE problem from a server problem at a glance. Full description in
+[espos/docs/rest-api.md](espos/docs/rest-api.md), and the component guide
+with the troubleshooting notes is [espos/docs/ble.md](espos/docs/ble.md).
+
+The device keeps its recent log at `http://<device>/api/v1/logs`, which is the
+first thing to look at when something misbehaves. Report problems in this
+repository's [issues](https://github.com/dirkwa/espos-ble-gateway/issues), with
+that log attached.
+
 ## Build
 
 Needs ESP-IDF exactly `v6.0.3` (pinned in `.idf-version`, kept equal to the
@@ -128,37 +195,6 @@ defaults first, then this project's `sdkconfig.defaults` (Bluetooth and the
 little the gateway does differently), then a git-ignored `sdkconfig.local`
 for personal overrides, then the partition table. Defaults reach a fresh
 sdkconfig only — delete `build*/sdkconfig` after changing them.
-
-## Setup
-
-On first boot the device raises a WiFi provisioning portal (`espOS-xxxx`).
-Join it and pick a network; from then on everything is at `http://<device>/`.
-
-On the Waveshare P4 POE-ETH the cable carries the network and the portal stays
-down while it has an address. A gateway that also has a stored WiFi network
-joins it beside the cable, and the station then shares the C6 radio with the
-BLE scanner: set `wifi.sta_enabled` to false to give the radio to BLE alone.
-The display boards (Touch-LCD-7B and -X) have no Ethernet and run on WiFi; the
-screen stays dark, since the gateway does not drive it.
-
-Credentials live in NVS, never in the firmware image. To provision without
-the portal, see [espos/docs/wifi.md](espos/docs/wifi.md) — put them in a CSV
-**outside the repo**, generate an NVS partition and flash it to `0x9000`.
-
-The gateway finds a SignalK server over mDNS and requests access as
-`ble_gateway <hostname>`; approve it in the server's admin UI under
-Security → Access Requests. On a network with several servers, pin one with
-`sk.server_host` and `sk.server_pin`.
-
-Settings live under the `ble` namespace in the web UI. Defaults are sensible;
-`active_scan` is off deliberately (see [espos/docs/ble.md](espos/docs/ble.md)).
-
-## Status
-
-`GET /api/v1/ble/status` reports scan, buffer and POST counters — enough to
-tell a BLE problem from a server problem at a glance. Full description in
-[espos/docs/rest-api.md](espos/docs/rest-api.md), and the component guide
-with the troubleshooting notes is [espos/docs/ble.md](espos/docs/ble.md).
 
 ## Releases
 
