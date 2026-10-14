@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/dirkwa/espos-ble-gateway/compare/v1.2.0...v1.3.0) (2026-10-14)
+
+
+### Added
+
+* **release:** ship 8 and 16 MB layouts per chip ([#59](https://github.com/dirkwa/espos-ble-gateway/issues/59)) ([7c4e926](https://github.com/dirkwa/espos-ble-gateway/commit/7c4e9261fde83841172a575ca6390f6257f890cf))
+
+
+### Fixed
+
+* bump espOS to v0.19.0 ([#60](https://github.com/dirkwa/espos-ble-gateway/issues/60)) ([93613a2](https://github.com/dirkwa/espos-ble-gateway/commit/93613a2478acae1f9bba040fe94fbd68e71723fe))
+
 ## [1.2.0](https://github.com/dirkwa/espos-ble-gateway/compare/v1.1.0...v1.2.0) (2026-10-13)
 
 
