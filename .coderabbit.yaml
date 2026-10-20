@@ -12,7 +12,7 @@ reviews:
   poem: false
   in_progress_fortune: false
   auto_review:
-    enabled: false
+    enabled: true
     drafts: false
     # release-please PRs only move version.txt and CHANGELOG.md; the
     # substantive change was reviewed on its own PR.
