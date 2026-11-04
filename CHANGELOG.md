@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/dirkwa/espos-ble-gateway/compare/v1.3.1...v1.3.2) (2026-11-04)
+
+
+### Fixed
+
+* bump espOS to v0.26.1 ([#70](https://github.com/dirkwa/espos-ble-gateway/issues/70)) ([5522858](https://github.com/dirkwa/espos-ble-gateway/commit/5522858b824266651fdde070648f7cb8607f42be))
+
 ## [1.3.1](https://github.com/dirkwa/espos-ble-gateway/compare/v1.3.0...v1.3.1) (2026-10-31)
 
 
