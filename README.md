@@ -179,7 +179,7 @@ that log attached.
 
 ## Build
 
-Needs ESP-IDF exactly `v6.0.3` (pinned in `.idf-version`, kept equal to the
+Needs ESP-IDF exactly `v6.1.1` (pinned in `.idf-version`, kept equal to the
 espOS submodule's pin — the build refuses a
 different one) and nothing else: the espOS web UI is a committed bundle, so
 there is no Node step.
@@ -187,7 +187,7 @@ there is no Node step.
 ```sh
 git clone --recursive https://github.com/dirkwa/espos-ble-gateway
 cd espos-ble-gateway
-. ~/esp-idf-v6.0.3/export.sh
+. ~/esp-idf-v6.1.1/export.sh
 
 # esp32p4 here; esp32 / esp32s3 / esp32c6 the same way.
 # esp32c5 too, but only with espos at espOS 0.18.0 or newer: the build refuses
