@@ -7,7 +7,7 @@
 # components are in the build (main/CMakeLists.txt), which partition table,
 # and the few sdkconfig lines that differ from espOS's.
 #
-# Build:  . <IDF v6.0.3>/export.sh
+# Build:  . <IDF v6.1.1>/export.sh
 #         espos/scripts/build.sh -B build-esp32p4 -DSDKCONFIG=build-esp32p4/sdkconfig -DIDF_TARGET=esp32p4 build
 cmake_minimum_required(VERSION 3.22)
 
