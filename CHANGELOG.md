@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/dirkwa/espos-ble-gateway/compare/v1.3.2...v1.4.0) (2026-11-22)
+
+
+### Added
+
+* scan with BLE 5 on chips that have it ([#81](https://github.com/dirkwa/espos-ble-gateway/issues/81)) ([359547f](https://github.com/dirkwa/espos-ble-gateway/commit/359547f4d2516d6fceb66ba3b16df3546bef40e6))
+
+
+### Fixed
+
+* bump espOS to v0.29.2 ([#76](https://github.com/dirkwa/espos-ble-gateway/issues/76)) ([3ee401d](https://github.com/dirkwa/espos-ble-gateway/commit/3ee401d66c13f9a019a299d78d4a271fcd3d9148))
+* bump espOS to v0.31.0 ([#79](https://github.com/dirkwa/espos-ble-gateway/issues/79)) ([eb5d2ae](https://github.com/dirkwa/espos-ble-gateway/commit/eb5d2ae89bd56861cd9cb67248604edccfa86d23))
+* bump espOS to v0.32.0 ([#80](https://github.com/dirkwa/espos-ble-gateway/issues/80)) ([bb39126](https://github.com/dirkwa/espos-ble-gateway/commit/bb39126f6e011f5a546edbc65ad593d2c8ebb2cc))
+
 ## [1.3.2](https://github.com/dirkwa/espos-ble-gateway/compare/v1.3.1...v1.3.2) (2026-11-04)
 
 
